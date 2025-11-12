@@ -1,0 +1,236 @@
+// Prisma Schema for UrjaFlow EaaS Platform
+// This schema supports both SQLite (dev) and PostgreSQL (production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Change to "postgresql" for production
+  url      = env("DATABASE_URL")
+}
+
+// User model - Authentication and profile
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  password      String? // Hashed password for credentials auth
+  emailVerified DateTime?
+  image         String?
+  role          String         @default("CUSTOMER") // CUSTOMER, ADMIN, SUPPORT
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  subscriptions Subscription[]
+  devices       Device[]
+  invoices      Invoice[]
+  tickets       SupportTicket[]
+  
+  @@map("users")
+}
+
+// NextAuth Account model
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// NextAuth Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+// Verification Token for email verification
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Subscription Plans
+model Plan {
+  id            String         @id @default(cuid())
+  name          String
+  description   String
+  price         Float // Monthly price in USD
+  currency      String         @default("USD")
+  features      String // JSON string of features array
+  maxDevices    Int            @default(5)
+  maxStorage    Int            @default(100) // GB
+  priority      Int            @default(0) // Display order
+  stripePriceId String? // Stripe Price ID
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  subscriptions Subscription[]
+  
+  @@map("plans")
+}
+
+// User Subscriptions
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  planId               String
+  status               String             @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  invoices Invoice[]
+  
+  @@map("subscriptions")
+}
+
+// IoT Devices
+model Device {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  type         String // SOLAR_PANEL, WIND_TURBINE, BATTERY, INVERTER, METER
+  model        String?
+  serialNumber String?       @unique
+  capacity     Float? // kW capacity
+  status       String        @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE, ERROR
+  location     String? // JSON string with lat/lng
+  installedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  // Relations
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readings DeviceReading[]
+  
+  @@map("devices")
+}
+
+// Real-time device readings
+model DeviceReading {
+  id              String   @id @default(cuid())
+  deviceId        String
+  timestamp       DateTime @default(now())
+  generationKW    Float? // Power generation in kW
+  consumptionKW   Float? // Power consumption in kW
+  batteryPercent  Float? // Battery level 0-100
+  voltage         Float?
+  current         Float?
+  temperature     Float?
+  efficiency      Float?
+  metadata        String? // JSON string for additional data
+  
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  
+  @@index([deviceId, timestamp])
+  @@map("device_readings")
+}
+
+// Invoices and Billing
+model Invoice {
+  id             String        @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  invoiceNumber  String        @unique
+  amount         Float
+  currency       String        @default("USD")
+  status         String        @default("PENDING") // PENDING, PAID, OVERDUE, CANCELED, REFUNDED
+  dueDate        DateTime
+  paidAt         DateTime?
+  stripeInvoiceId String?      @unique
+  description    String?
+  metadata       String? // JSON string for line items
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  @@map("invoices")
+}
+
+// Support Tickets
+model SupportTicket {
+  id          String       @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      String       @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority    String       @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  category    String?
+  assignedTo  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("support_tickets")
+}
+
+// FAQ for support
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("faqs")
+}
+
+// System notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String?
+  title     String
+  message   String
+  type      String           @default("INFO") // INFO, SUCCESS, WARNING, ERROR, ALERT
+  read      Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+  
+  @@map("notifications")
+}
