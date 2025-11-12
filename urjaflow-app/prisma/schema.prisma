@@ -29,8 +29,10 @@ model User {
   devices       Device[]
   invoices      Invoice[]
   tickets       SupportTicket[]
+  notifications Notification[]
   
-  @@map("users")
+  // Preferences
+  notificationPreferences String? // JSON string for notification settings
 }
 
 // NextAuth Account model
@@ -231,6 +233,9 @@ model Notification {
   read      Boolean          @default(false)
   link      String?
   createdAt DateTime         @default(now())
+  
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
   
   @@map("notifications")
 }
