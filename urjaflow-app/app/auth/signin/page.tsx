@@ -233,7 +233,7 @@ function SignInForm() {
 
       {/* Right side - Image/Branding */}
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-linear-gradient-to-br from-green-400 to-blue-500">
+        <div className="absolute inset-0 bg-linear-to-br from-green-400 to-blue-500">
           <div className="flex h-full flex-col items-center justify-center p-12 text-white">
             <Icons.zap size={80} className="mb-8" />
             <h2 className="mb-4 text-4xl font-bold">Energy as a Service</h2>
