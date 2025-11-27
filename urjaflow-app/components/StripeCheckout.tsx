@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Icons } from './Icons';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+interface StripeWithCheckout extends Stripe {
+  redirectToCheckout(options: { sessionId: string }): Promise<{ error?: { message: string } }>;
+}
+
+const stripePromise: Promise<Stripe | null> = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface StripeCheckoutProps {
   planId: string;
   planName: string;
-  amount: number;
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
@@ -17,7 +20,6 @@ interface StripeCheckoutProps {
 export function StripeCheckout({ 
   planId, 
   planName, 
-  amount,
   onSuccess,
   onError 
 }: StripeCheckoutProps) {
@@ -48,12 +50,12 @@ export function StripeCheckout({
         throw new Error('Stripe failed to load');
       }
 
-      const { error } = await stripe.redirectToCheckout({
+      const result = await (stripe as StripeWithCheckout).redirectToCheckout({
         sessionId: data.data.sessionId,
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (result.error) {
+        throw new Error(result.error.message);
       }
 
       onSuccess?.();
