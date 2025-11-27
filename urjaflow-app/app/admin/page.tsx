@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Icons } from '@/components/Icons';
+export const dynamic = 'force-dynamic';
 
 interface DashboardStats {
   totalUsers: number;
