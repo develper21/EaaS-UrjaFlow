@@ -1,3 +1,8 @@
+'use client';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -9,13 +14,21 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
+interface User {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role: string;
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === 'loading') return; // Still loading
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session || !session.user || (session.user as User).role !== 'ADMIN') {
       router.push('/auth/signin');
     }
   }, [session, status, router]);
@@ -31,7 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!session?.user || (session.user as any).role !== 'ADMIN') {
+  if (!session || !session.user || (session.user as User).role !== 'ADMIN') {
     return null;
   }
 
@@ -95,7 +108,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6">
           <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{session.user?.name}</span>
+            <span className="text-gray-700">{session?.user?.name || 'Admin'}</span>
             <Link
               href="/api/auth/signout"
               className="text-gray-600 hover:text-gray-900"
