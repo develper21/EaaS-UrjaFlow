@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icons } from '@/components/Icons';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
@@ -88,9 +88,9 @@ export default function PaymentSuccessPage() {
           <div className="flex items-start gap-3">
             <Icons.info size={20} className="mt-0.5 text-blue-600" />
             <div className="text-left text-sm text-blue-900">
-              <p className="font-semibold">What's next?</p>
+              <p className="font-semibold">What&apos;s next?</p>
               <p className="mt-1 text-blue-700">
-                You'll receive a confirmation email shortly with your invoice and subscription
+                You&apos;ll receive a confirmation email shortly with your invoice and subscription
                 details.
               </p>
             </div>
@@ -98,5 +98,17 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <Icons.loader className="animate-spin" size={48} />
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
