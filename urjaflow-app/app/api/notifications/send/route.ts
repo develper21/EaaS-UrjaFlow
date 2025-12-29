@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/prisma';
 import { sendEmail, generateNotificationEmail } from '@/lib/email';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: NextRequest) {
   try {
     // Get all users with notification preferences
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('id, name, email, notificationPreferences')
-      .not('notificationPreferences', 'is', null);
-
-    if (error) {
-      console.error('Error fetching users:', error);
-      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
-    }
+    const users = await prisma.user.findMany({
+      where: {
+        notificationPreferences: { not: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        notificationPreferences: true,
+      },
+    });
 
     const results = [];
 
-    for (const user of users || []) {
+    for (const user of users) {
       try {
         const prefs = JSON.parse(user.notificationPreferences || '{}');
 
@@ -31,25 +28,33 @@ export async function POST(request: NextRequest) {
         // Send energy report if enabled
         if (prefs.energyReports) {
           // Get user's devices first
-          const { data: devices } = await supabase
-            .from('devices')
-            .select('id')
-            .eq('userId', user.id);
+          const devices = await prisma.device.findMany({
+            where: { userId: user.id },
+            select: { id: true },
+          });
 
-          if (!devices || devices.length === 0) continue;
+          if (devices.length === 0) continue;
 
-          const deviceIds = devices.map(d => d.id);
+          const deviceIds = devices.map((d: { id: string }) => d.id);
 
-          const { data: energyData } = await supabase
-            .from('device_readings')
-            .select('generationKW, consumptionKW, timestamp')
-            .in('deviceId', deviceIds)
-            .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+          const energyData = await prisma.deviceReading.findMany({
+            where: {
+              deviceId: { in: deviceIds },
+              timestamp: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+              },
+            },
+            select: {
+              generationKW: true,
+              consumptionKW: true,
+              timestamp: true,
+            },
+          });
 
-          if (energyData && energyData.length > 0) {
-            const totalGenerated = energyData.reduce((sum, reading) => sum + (reading.generationKW || 0), 0);
-            const totalConsumed = energyData.reduce((sum, reading) => sum + (reading.consumptionKW || 0), 0);
-            const efficiency = totalGenerated > 0 ? ((totalGenerated - totalConsumed) / totalGenerated * 100).toFixed(1) : '0';
+          if (energyData.length > 0) {
+            const totalGenerated = energyData.reduce((sum: number, reading: { generationKW: number | null }) => sum + (reading.generationKW || 0), 0);
+            const totalConsumed = energyData.reduce((sum: number, reading: { consumptionKW: number | null }) => sum + (reading.consumptionKW || 0), 0);
+            const efficiency = totalGenerated > 0 ? (((totalGenerated - totalConsumed) / totalGenerated) * 100).toFixed(1) : '0';
             const savings = (totalGenerated * 0.12).toFixed(2);
 
             const emailTemplate = generateNotificationEmail('energy', {
@@ -72,24 +77,31 @@ export async function POST(request: NextRequest) {
 
         // Send billing notifications if enabled
         if (prefs.billingAlerts) {
-          const { data: recentInvoices } = await supabase
-            .from('invoices')
-            .select(`
-              *,
-              subscriptions (
-                currentPeriodStart,
-                currentPeriodEnd
-              )
-            `)
-            .eq('userId', user.id)
-            .eq('status', 'PAID')
-            .gte('paidAt', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-            .order('paidAt', { ascending: false })
-            .limit(1);
+          const recentInvoices = await prisma.invoice.findMany({
+            where: {
+              userId: user.id,
+              status: 'PAID',
+              paidAt: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              },
+            },
+            include: {
+              subscription: {
+                select: {
+                  currentPeriodStart: true,
+                  currentPeriodEnd: true,
+                },
+              },
+            },
+            orderBy: {
+              paidAt: 'desc',
+            },
+            take: 1,
+          });
 
-          if (recentInvoices && recentInvoices.length > 0) {
+          if (recentInvoices.length > 0) {
             const invoice = recentInvoices[0];
-            const subscription = invoice.subscriptions;
+            const subscription = invoice.subscription;
             const emailTemplate = generateNotificationEmail('billing', {
               userName: user.name,
               period: subscription ? `${new Date(subscription.currentPeriodStart).toLocaleDateString()} - ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : 'N/A',
@@ -107,7 +119,6 @@ export async function POST(request: NextRequest) {
             results.push({ userId: user.id, type: 'billing', status: 'sent' });
           }
         }
-
       } catch (userError) {
         console.error(`Error sending notification to user ${user.id}:`, userError);
         results.push({ userId: user.id, type: 'error', status: 'failed' });
