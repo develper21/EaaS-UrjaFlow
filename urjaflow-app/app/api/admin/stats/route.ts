@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,34 +12,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total users
-    const { count: totalUsers } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
+    const totalUsers = await prisma.user.count();
 
     // Get total devices
-    const { count: totalDevices } = await supabase
-      .from('devices')
-      .select('*', { count: 'exact', head: true });
+    const totalDevices = await prisma.device.count();
 
     // Get total revenue from paid invoices
-    const { data: revenueData } = await supabase
-      .from('invoices')
-      .select('amount')
-      .eq('status', 'PAID');
+    const revenueData = await prisma.invoice.findMany({
+      where: { status: 'PAID' },
+      select: { amount: true },
+    });
 
-    const totalRevenue = revenueData?.reduce((sum, invoice) => sum + invoice.amount, 0) || 0;
+    const totalRevenue = revenueData.reduce((sum: number, invoice: { amount: number }) => sum + invoice.amount, 0);
 
     // Get active subscriptions
-    const { count: activeSubscriptions } = await supabase
-      .from('subscriptions')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'ACTIVE');
+    const activeSubscriptions = await prisma.subscription.count({
+      where: { status: 'ACTIVE' },
+    });
 
     return NextResponse.json({
-      totalUsers: totalUsers || 0,
-      totalDevices: totalDevices || 0,
+      totalUsers,
+      totalDevices,
       totalRevenue,
-      activeSubscriptions: activeSubscriptions || 0,
+      activeSubscriptions,
     });
 
   } catch (error) {
