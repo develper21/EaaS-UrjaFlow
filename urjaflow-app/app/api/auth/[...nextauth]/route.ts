@@ -2,13 +2,8 @@ import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,14 +18,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password required');
         }
 
-        // Query Supabase for user
-        const { data: user, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', credentials.email)
-          .single();
+        // Query Prisma for user
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
 
-        if (error || !user) {
+        if (!user) {
           throw new Error('Invalid credentials');
         }
 
@@ -69,21 +62,21 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google' || account?.provider === 'github') {
-        // Check if user exists in Supabase
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', user.email)
-          .single();
+        // Check if user exists in Prisma
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
 
         if (!existingUser) {
-          // Create new user in Supabase
-          await supabase.from('users').insert({
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: 'CUSTOMER',
-            emailVerified: new Date().toISOString(),
+          // Create new user in Prisma
+          await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name,
+              image: user.image,
+              role: 'CUSTOMER',
+              emailVerified: new Date(),
+            },
           });
         }
       }
