@@ -9,10 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     const result = await requirePermission(Permission.GENERATE_REPORTS)(async (req, context) => {
       const body = await req.json();
-      const { 
-        organizationId, 
-        format = 'PDF', 
-        period = 30, 
+      const {
+        organizationId,
+        format = 'PDF',
+        period = 30,
         deviceIds,
         includeCharts = true,
         includeRecommendations = true,
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' && 
-          organization.id !== context.user.organizationId) {
+      if (context.user.role !== 'SUPER_ADMIN' &&
+        organization.id !== context.user.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Get devices
-      const deviceWhere: any = { organizationId: organization.id };
+      const deviceWhere: import('@prisma/client').Prisma.DeviceWhereInput = { organizationId: organization.id };
       if (deviceIds && deviceIds.length > 0) {
         deviceWhere.id = { in: deviceIds };
       }
@@ -89,10 +89,10 @@ export async function POST(request: NextRequest) {
       const reportBuffer = await ReportGenerator.generateReport(reportData, reportConfig);
 
       // Set appropriate headers
-      const contentType = format === 'PDF' 
-        ? 'application/pdf' 
+      const contentType = format === 'PDF'
+        ? 'application/pdf'
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      
+
       const filename = `${organization.name.replace(/[^a-zA-Z0-9]/g, '_')}_energy_report_${new Date().toISOString().split('T')[0]}.${format.toLowerCase()}`;
 
       return new NextResponse(new Uint8Array(reportBuffer), {
@@ -105,10 +105,12 @@ export async function POST(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
 // GET /api/reports/generate/templates - Get available report templates
 export async function GET(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.GENERATE_REPORTS)(async (req, context) => {
+    const result = await requirePermission(Permission.GENERATE_REPORTS)(async () => {
       const templates = [
         {
           id: 'monthly_summary',
@@ -167,7 +169,7 @@ export async function GET(request: NextRequest) {
           formats: ['PDF', 'EXCEL'],
           sections: [
             'summary',
-            'devices', 
+            'devices',
             'readings',
             'analytics',
             'recommendations',
@@ -178,10 +180,12 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
