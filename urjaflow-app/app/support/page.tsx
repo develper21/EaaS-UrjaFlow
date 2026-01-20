@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Icon } from '@/components/Icons';
-import { FAQ, SupportTicket } from '@/types';
+import { FAQ } from '@/types';
 
 // Mock FAQs
 const MOCK_FAQS: FAQ[] = [
