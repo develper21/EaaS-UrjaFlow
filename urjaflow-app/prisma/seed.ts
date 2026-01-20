@@ -12,14 +12,53 @@ async function main() {
   await prisma.invoice.deleteMany();
   await prisma.supportTicket.deleteMany();
   await prisma.subscription.deleteMany();
+  await prisma.organizationSubscription.deleteMany();
   await prisma.plan.deleteMany();
   await prisma.fAQ.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
 
   console.log('✅ Cleaned existing data');
+
+  // Create demo organizations
+  const demoOrg = await prisma.organization.create({
+    data: {
+      name: 'Demo Energy Corp',
+      slug: 'demo-energy-corp',
+      primaryColor: '#3b82f6',
+      secondaryColor: '#64748b',
+      plan: 'ENTERPRISE',
+      maxUsers: 50,
+      maxDevices: 100,
+      settings: JSON.stringify({
+        timezone: 'UTC',
+        currency: 'USD',
+        notifications: true,
+      }),
+    },
+  });
+
+  const techOrg = await prisma.organization.create({
+    data: {
+      name: 'Tech Solutions Ltd',
+      slug: 'tech-solutions',
+      primaryColor: '#10b981',
+      secondaryColor: '#6b7280',
+      plan: 'PROFESSIONAL',
+      maxUsers: 20,
+      maxDevices: 50,
+      settings: JSON.stringify({
+        timezone: 'America/New_York',
+        currency: 'USD',
+        notifications: true,
+      }),
+    },
+  });
+
+  console.log('✅ Created organizations');
 
   // Create demo users
   const hashedPassword = await bcrypt.hash('demo123', 10);
@@ -29,8 +68,9 @@ async function main() {
       email: 'demo@urjaflow.com',
       name: 'Demo User',
       password: hashedPassword,
-      role: 'CUSTOMER',
+      role: 'VIEWER',
       emailVerified: new Date(),
+      organizationId: demoOrg.id,
     },
   });
 
@@ -39,8 +79,30 @@ async function main() {
       email: 'admin@urjaflow.com',
       name: 'Admin User',
       password: hashedPassword,
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
       emailVerified: new Date(),
+    },
+  });
+
+  const orgAdmin = await prisma.user.create({
+    data: {
+      email: 'org.admin@techsolutions.com',
+      name: 'Org Admin',
+      password: hashedPassword,
+      role: 'ORG_ADMIN',
+      emailVerified: new Date(),
+      organizationId: techOrg.id,
+    },
+  });
+
+  const manager = await prisma.user.create({
+    data: {
+      email: 'manager@techsolutions.com',
+      name: 'Manager User',
+      password: hashedPassword,
+      role: 'MANAGER',
+      emailVerified: new Date(),
+      organizationId: techOrg.id,
     },
   });
 
@@ -112,6 +174,29 @@ async function main() {
 
   console.log('✅ Created subscription plans');
 
+  // Create organization subscriptions
+  await prisma.organizationSubscription.create({
+    data: {
+      organizationId: demoOrg.id,
+      planId: enterprisePlan.id,
+      status: 'ACTIVE',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await prisma.organizationSubscription.create({
+    data: {
+      organizationId: techOrg.id,
+      planId: proPlan.id,
+      status: 'ACTIVE',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  console.log('✅ Created organization subscriptions');
+
   // Create subscription for demo user
   const subscription = await prisma.subscription.create({
     data: {
@@ -125,10 +210,10 @@ async function main() {
 
   console.log('✅ Created subscription');
 
-  // Create devices for demo user
+  // Create devices for organizations
   const solarPanel = await prisma.device.create({
     data: {
-      userId: demoUser.id,
+      organizationId: demoOrg.id,
       name: 'Rooftop Solar Array',
       type: 'SOLAR_PANEL',
       model: 'SunPower X22-370',
