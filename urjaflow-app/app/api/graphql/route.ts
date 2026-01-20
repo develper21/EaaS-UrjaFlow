@@ -4,19 +4,21 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { typeDefs } from '@/lib/graphql/schema';
-import { resolvers } from '@/lib/graphql/resolvers';
+import { resolvers, GraphQLContext } from '@/lib/graphql/resolvers';
 
-const server = new ApolloServer({
+const server = new ApolloServer<GraphQLContext>({
   typeDefs,
   resolvers,
   introspection: true,
   plugins: [
     {
-      requestDidStart() {
+      async requestDidStart() {
         return {
-          didResolveOperation(requestContext) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          didResolveOperation(requestContext: import('@apollo/server').GraphQLRequestContext<any>) {
             // Log GraphQL operations for monitoring
             console.log(`GraphQL Operation: ${requestContext.request.operationName}`);
+            return Promise.resolve();
           },
         };
       },
@@ -24,7 +26,9 @@ const server = new ApolloServer({
   ],
 });
 
-const handler = startServerAndCreateNextHandler(server);
+const handler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(server, {
+  context: async (req) => createContext(req),
+});
 
 export async function GET(request: NextRequest) {
   return handler(request);
@@ -44,7 +48,7 @@ async function createContext(request: NextRequest) {
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as any;
+      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as { userId: string };
       user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         include: {
@@ -58,7 +62,7 @@ async function createContext(request: NextRequest) {
   }
 
   return {
-    user,
+    user: user as import('@prisma/client').User | null,
     prisma,
   };
 }
