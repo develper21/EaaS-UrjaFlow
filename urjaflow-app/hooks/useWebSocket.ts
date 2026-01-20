@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface DeviceReading {
+export interface DeviceReading {
   deviceId: string;
   timestamp: Date;
   generationKW: number;
@@ -14,7 +14,7 @@ interface DeviceReading {
 
 interface WebSocketMessage {
   type: 'reading' | 'alert' | 'status';
-  data: DeviceReading | any;
+  data: DeviceReading | unknown;
 }
 
 export function useWebSocket(url: string) {
@@ -26,14 +26,32 @@ export function useWebSocket(url: string) {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
 
-  const connect = () => {
-    try {
-      // Clear any existing timeout
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
+  // Using a ref to store the latest version of the connect function to avoid
+  // dependency cycles when it calls itself in setTimeout.
+  const connectRef = useRef<() => void>();
 
+  const disconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    setIsConnected(false);
+  }, []); // No dependencies, as it only uses refs and stable state setter
+
+  const connect = useCallback(() => {
+    // Clear any existing timeout before attempting a new connection
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    try {
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -67,11 +85,12 @@ export function useWebSocket(url: string) {
         if (reconnectAttempts.current < maxReconnectAttempts) {
           reconnectAttempts.current++;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          
+
           console.log(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`);
-          
+
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
+            // Use the ref to call the latest connect function
+            connectRef.current?.();
           }, delay);
         } else {
           setError('Failed to connect after multiple attempts');
@@ -81,7 +100,7 @@ export function useWebSocket(url: string) {
       ws.onerror = (event) => {
         console.error('❌ WebSocket error:', event);
         setError('WebSocket connection error');
-        
+
         // Don't immediately close on error, let the onclose handle reconnection
         if (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
           setIsConnected(false);
@@ -92,48 +111,40 @@ export function useWebSocket(url: string) {
     } catch (err) {
       console.error('Failed to create WebSocket connection:', err);
       setError('Failed to create WebSocket connection');
-      
+
       // Try to reconnect after a delay
       if (reconnectAttempts.current < maxReconnectAttempts) {
         reconnectAttempts.current++;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-        
+
         reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
+          // Use the ref to call the latest connect function
+          connectRef.current?.();
         }, delay);
       }
     }
-  };
+  }, [url, setIsConnected, setError]); // Dependencies: url, and stable state setters
 
-  const disconnect = () => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
+  // Update the ref whenever the connect function itself is re-created
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    setIsConnected(false);
-  };
-
-  const sendMessage = (message: any) => {
+  const sendMessage = useCallback((message: unknown) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket is not connected');
     }
-  };
+  }, []); // No dependencies, as it only uses a ref
 
   useEffect(() => {
-    connect();
+    connectRef.current?.(); // Call the connect function via its ref
 
     return () => {
       disconnect();
     };
-  }, [url]);
+  }, [url, disconnect]); // url is a dependency for connect, disconnect is stable
 
   return {
     isConnected,
