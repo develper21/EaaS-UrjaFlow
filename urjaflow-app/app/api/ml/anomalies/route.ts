@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       const hours = parseInt(searchParams.get('hours') || '24'); // Default to last 24 hours
 
       // Get devices to analyze
-      const where: any = {};
+      const where: import('@prisma/client').Prisma.DeviceWhereInput = {};
       if (deviceId) {
         where.id = deviceId;
       } else {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
         // Detect anomalies
         const anomalyDetection = EnergyPredictionService.detectAnomalies(device.readings);
-        
+
         anomalyResults.push({
           deviceId: device.id,
           deviceName: device.name,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       for (const result of anomalyResults) {
         if (result.anomalies) {
           const highPriorityAnomalies = result.anomalies.filter(a => a.severity === 'HIGH');
-          
+
           for (const anomaly of highPriorityAnomalies) {
             alerts.push({
               deviceId: result.deviceId,
@@ -112,10 +112,12 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
@@ -139,8 +141,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (context.user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== context.user.organizationId) {
+      if (context.user.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== context.user.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
 
       // In a real implementation, you'd store these rules in the database
       // For now, we'll just return success
-      
+
       const defaultRules = {
         spikeThreshold: 0.5, // 50% change
         dropThreshold: 0.3,  // 30% change
@@ -173,10 +175,12 @@ export async function POST(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
