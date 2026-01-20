@@ -13,6 +13,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function AccountPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: session?.user?.name || '',
     email: session?.user?.email || '',
@@ -24,10 +25,10 @@ export default function AccountPage() {
   const [message, setMessage] = useState('');
 
   // Fetch user profile data
-  const { data: profileData, error } = useSWR('/api/account/profile', fetcher);
+  const { data: profileData, error } = useSWR<import('@/types').ApiResponse<import('@prisma/client').User>>('/api/account/profile', fetcher);
 
   // Update form when profile data loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (profileData?.data) {
       setFormData({
         name: profileData.data.name || session?.user?.name || '',
@@ -60,7 +61,7 @@ export default function AccountPage() {
       } else {
         setMessage(result.error || 'Failed to update profile');
       }
-    } catch (error) {
+    } catch {
       setMessage('An error occurred. Please try again.');
     } finally {
       setSaving(false);
@@ -97,7 +98,7 @@ export default function AccountPage() {
       } else {
         setMessage(result.error || 'Failed to change password');
       }
-    } catch (error) {
+    } catch {
       setMessage('An error occurred. Please try again.');
     }
     setTimeout(() => setMessage(''), 3000);
@@ -117,7 +118,7 @@ export default function AccountPage() {
       } else {
         setMessage(result.error || 'Failed to enable 2FA');
       }
-    } catch (error) {
+    } catch {
       setMessage('An error occurred. Please try again.');
     }
     setTimeout(() => setMessage(''), 3000);
@@ -133,11 +134,11 @@ export default function AccountPage() {
         const result = await response.json();
 
         if (result.success) {
-          window.location.href = '/auth/signin';
+          router.push('/auth/signin');
         } else {
           setMessage(result.error || 'Failed to delete account');
         }
-      } catch (error) {
+      } catch {
         setMessage('An error occurred. Please try again.');
       }
     }
@@ -168,9 +169,8 @@ export default function AccountPage() {
 
         {/* Success/Error Message */}
         {message && (
-          <div className={`rounded-lg p-4 ${
-            message.includes('success') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
+          <div className={`rounded-lg p-4 ${message.includes('success') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            }`}>
             <div className="flex">
               <Icon name={message.includes('success') ? 'checkCircle' : 'alertCircle'} size={20} className="mr-3" />
               <p>{message}</p>
@@ -250,13 +250,13 @@ export default function AccountPage() {
             <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-xl font-semibold text-gray-900">Security</h2>
               <div className="space-y-4">
-                <button 
+                <button
                   onClick={handlePasswordChange}
                   className="w-full rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                 >
                   Change Password
                 </button>
-                <button 
+                <button
                   onClick={handle2FA}
                   className="w-full rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                 >
@@ -306,7 +306,7 @@ export default function AccountPage() {
               <p className="mb-4 text-sm text-red-700">
                 Once you delete your account, there is no going back.
               </p>
-              <button 
+              <button
                 onClick={handleDeleteAccount}
                 className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
               >
@@ -441,7 +441,7 @@ function TwoFASetupForm({ onSubmit, onCancel }: { onSubmit: () => void; onCancel
         <Icon name="shield" size={64} className="mx-auto text-gray-400 mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">Enable Two-Factor Authentication</h3>
         <p className="text-gray-600 mb-6">Add an extra layer of security to your account</p>
-        
+
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <p className="text-sm text-gray-700 mb-2">Scan this QR code with your authenticator app:</p>
           <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg mx-auto flex items-center justify-center">
