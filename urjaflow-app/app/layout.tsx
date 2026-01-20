@@ -12,6 +12,27 @@ export const metadata: Metadata = {
   title: "UrjaFlow - Energy as a Service Platform",
   description: "Monitor and manage your renewable energy systems with real-time analytics and insights",
   keywords: ["energy", "solar", "renewable", "monitoring", "IoT"],
+  manifest: "/manifest.json",
+  themeColor: "#10b981",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "UrjaFlow",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "UrjaFlow",
+    title: "UrjaFlow - Energy Management Platform",
+    description: "Monitor and manage your renewable energy systems with real-time analytics",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "UrjaFlow - Energy Management Platform",
+    description: "Monitor and manage your renewable energy systems with real-time analytics",
+  },
 };
 
 export default function RootLayout({
