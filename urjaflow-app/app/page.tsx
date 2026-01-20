@@ -6,92 +6,115 @@ import { StatCard } from '@/components/StatCard';
 import { ChartBars } from '@/components/ChartBars';
 import { Icon } from '@/components/Icons';
 import { formatCurrency, formatNumber } from '@/lib/utils';
-import { Device, DeviceReading } from '@/types';
+import { Device } from '@/types';
+import useSWR from 'swr';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
-// Mock data - will be replaced with real API calls
-const MOCK_STATS = {
-  liveGeneration: 4.2,
-  liveConsumption: 2.8,
-  batteryLevel: 75,
-  monthlySavings: 156.50,
-  carbonSaved: 245,
-};
-
-const MOCK_HISTORY = [
-  { label: 'Mon', value: 28.5 },
-  { label: 'Tue', value: 32.1 },
-  { label: 'Wed', value: 29.8 },
-  { label: 'Thu', value: 35.2 },
-  { label: 'Fri', value: 31.7 },
-  { label: 'Sat', value: 27.3 },
-  { label: 'Sun', value: 30.9 },
-];
-
-const MOCK_DEVICES: Device[] = [
-  {
-    id: '1',
-    userId: '1',
-    name: 'Rooftop Solar Array',
-    type: 'SOLAR_PANEL',
-    model: 'SunPower X22-370',
-    serialNumber: 'SP-2024-001',
-    capacity: 5.5,
-    status: 'ACTIVE',
-    location: { lat: 37.7749, lng: -122.4194, address: 'San Francisco, CA' },
-    installedAt: new Date('2024-01-15'),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    userId: '1',
-    name: 'Home Battery Storage',
-    type: 'BATTERY',
-    model: 'Tesla Powerwall 2',
-    serialNumber: 'BAT-2024-001',
-    capacity: 13.5,
-    status: 'ACTIVE',
-    location: { lat: 37.7749, lng: -122.4194, address: 'San Francisco, CA' },
-    installedAt: new Date('2024-01-15'),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(MOCK_STATS);
-  const [devices, setDevices] = useState(MOCK_DEVICES);
+  const { data: dashboardData, error, isLoading, mutate } = useSWR('/api/dashboard', fetcher, {
+    refreshInterval: 10000, // Refresh every 10 seconds as fallback
+  });
 
-  // Simulate real-time updates
+  // WebSocket for real-time updates
+  const { isConnected, lastMessage, error: wsError } = useWebSocket(
+    process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'
+  );
+
+  // Update dashboard data when WebSocket message received
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats((prev) => ({
-        ...prev,
-        liveGeneration: prev.liveGeneration + (Math.random() - 0.5) * 0.5,
-        liveConsumption: prev.liveConsumption + (Math.random() - 0.5) * 0.3,
-        batteryLevel: Math.max(0, Math.min(100, prev.batteryLevel + (Math.random() - 0.5) * 2)),
-      }));
-    }, 3000);
+    if (lastMessage?.type === 'reading' && dashboardData?.data) {
+      // Update live stats with new reading
+      const reading = lastMessage.data;
+      
+      // Mutate the SWR cache with updated data
+      mutate((currentData: any) => {
+        if (!currentData?.data) return currentData;
 
-    return () => clearInterval(interval);
-  }, []);
+        return {
+          ...currentData,
+          data: {
+            ...currentData.data,
+            liveGeneration: reading.generationKW,
+            liveConsumption: reading.consumptionKW,
+            batteryLevel: reading.batteryPercent,
+          },
+        };
+      }, false);
+    }
+  }, [lastMessage, dashboardData, mutate]);
+
+  if (error) return (
+    <Layout>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <Icon name="alertCircle" size={48} className="text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900">Failed to load dashboard</h2>
+          <p className="text-gray-600 mt-2">Please check your connection and try again</p>
+        </div>
+      </div>
+    </Layout>
+  );
+
+  // Show WebSocket error but don't block the UI
+  if (wsError && !isLoading) {
+    console.warn('WebSocket connection issue:', wsError);
+  }
+
+  if (isLoading || !dashboardData?.data) return (
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-2 text-gray-600">Monitor your energy production and consumption in real-time</p>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm animate-pulse">
+              <div className="h-4 bg-gray-200 rounded mb-4"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Layout>
+  );
+
+  const { liveGeneration, liveConsumption, batteryLevel, monthlySavings, carbonSaved, generationHistory, devices } = dashboardData.data;
+
+  // Transform generation history for chart
+  const chartData = generationHistory.map((day: any) => ({
+    label: day.date,
+    value: day.generation,
+  }));
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Monitor your energy production and consumption in real-time
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-gray-600">
+              Monitor your energy production and consumption in real-time
+            </p>
+          </div>
+          
+          {/* Connection Status */}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-gray-600">
+              {isConnected ? 'Live' : 'Offline'}
+            </span>
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Live Generation"
-            value={formatNumber(stats.liveGeneration, 1)}
+            value={formatNumber(liveGeneration, 1)}
             unit="kW"
             icon="sun"
             iconColor="text-yellow-600"
@@ -99,7 +122,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Live Consumption"
-            value={formatNumber(stats.liveConsumption, 1)}
+            value={formatNumber(liveConsumption, 1)}
             unit="kW"
             icon="zap"
             iconColor="text-blue-600"
@@ -107,14 +130,14 @@ export default function Dashboard() {
           />
           <StatCard
             title="Battery Level"
-            value={formatNumber(stats.batteryLevel, 0)}
+            value={formatNumber(batteryLevel, 0)}
             unit="%"
             icon="battery"
             iconColor="text-green-600"
           />
           <StatCard
             title="Monthly Savings"
-            value={formatCurrency(stats.monthlySavings)}
+            value={formatCurrency(monthlySavings)}
             icon="dollarSign"
             iconColor="text-emerald-600"
             trend={{ value: 8.3, isPositive: true }}
@@ -131,7 +154,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Carbon Offset</p>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {formatNumber(stats.carbonSaved, 0)} kg
+                  {formatNumber(carbonSaved, 0)} kg
                 </h3>
                 <p className="text-sm text-gray-500">CO₂ saved this month</p>
               </div>
@@ -157,14 +180,14 @@ export default function Dashboard() {
           <h2 className="mb-6 text-xl font-semibold text-gray-900">
             Weekly Generation History
           </h2>
-          <ChartBars data={MOCK_HISTORY} height={250} />
+          <ChartBars data={chartData} height={250} />
         </div>
 
         {/* Devices List */}
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-6 text-xl font-semibold text-gray-900">Connected Devices</h2>
           <div className="space-y-4">
-            {devices.map((device) => (
+            {devices.map((device: Device) => (
               <div
                 key={device.id}
                 className="flex items-center justify-between rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
