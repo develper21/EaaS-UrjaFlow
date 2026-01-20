@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Icon } from '@/components/Icons';
+import { Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 
 interface ReportTemplate {
@@ -64,7 +64,7 @@ export default function ReportsPage() {
     }
   };
 
-  const generateReport = async (template: ReportTemplate, config: any) => {
+  const generateReport = async (template: ReportTemplate, config: Record<string, unknown>) => {
     setIsGenerating(true);
     try {
       const response = await fetch('/api/reports/generate', {
@@ -89,7 +89,7 @@ export default function ReportsPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         // Refresh generated reports
         fetchGeneratedReports();
         setShowGenerateModal(false);
@@ -169,7 +169,7 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="mt-2 text-gray-600">Generate and manage custom reports for your energy data</p>
         </div>
-        
+
         <button
           onClick={() => setShowGenerateModal(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -225,7 +225,7 @@ export default function ReportsPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Last Generated</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {generatedReports.length > 0 
+                {generatedReports.length > 0
                   ? new Date(generatedReports[0].generatedAt).toLocaleDateString()
                   : 'Never'
                 }
@@ -239,20 +239,19 @@ export default function ReportsPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'templates', label: 'Report Templates', icon: 'fileText' },
-            { id: 'generated', label: 'Generated Reports', icon: 'download' },
-            { id: 'schedule', label: 'Scheduled Reports', icon: 'calendar' },
+            { id: 'templates' as const, label: 'Report Templates', icon: 'fileText' as IconName },
+            { id: 'generated' as const, label: 'Generated Reports', icon: 'download' as IconName },
+            { id: 'schedule' as const, label: 'Scheduled Reports', icon: 'calendar' as IconName },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                   ? 'border-green-500 text-green-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
-              <Icon name={tab.icon as any} size={16} className="mr-2" />
+              <Icon name={tab.icon} size={16} className="mr-2" />
               {tab.label}
             </button>
           ))}
@@ -266,22 +265,20 @@ export default function ReportsPage() {
             <div key={template.id} className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center">
-                  <div className={`flex-shrink-0 rounded-lg p-3 ${
-                    template.format === 'PDF' ? 'bg-red-100' : 'bg-green-100'
-                  }`}>
-                    <Icon 
-                      name={template.format === 'PDF' ? 'fileText' : 'barChart'} 
-                      size={20} 
-                      className={template.format === 'PDF' ? 'text-red-600' : 'text-green-600'} 
+                  <div className={`flex-shrink-0 rounded-lg p-3 ${template.format === 'PDF' ? 'bg-red-100' : 'bg-green-100'
+                    }`}>
+                    <Icon
+                      name={template.format === 'PDF' ? 'fileText' : 'barChart'}
+                      size={20}
+                      className={template.format === 'PDF' ? 'text-red-600' : 'text-green-600'}
                     />
                   </div>
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900">{template.name}</h3>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      template.format === 'PDF' 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${template.format === 'PDF'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-green-100 text-green-800'
+                      }`}>
                       {template.format}
                     </span>
                   </div>
@@ -366,13 +363,12 @@ export default function ReportsPage() {
                     <tr key={report.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className={`flex-shrink-0 rounded-lg p-2 ${
-                            report.format === 'PDF' ? 'bg-red-100' : 'bg-green-100'
-                          }`}>
-                            <Icon 
-                              name={report.format === 'PDF' ? 'fileText' : 'barChart'} 
-                              size={16} 
-                              className={report.format === 'PDF' ? 'text-red-600' : 'text-green-600'} 
+                          <div className={`flex-shrink-0 rounded-lg p-2 ${report.format === 'PDF' ? 'bg-red-100' : 'bg-green-100'
+                            }`}>
+                            <Icon
+                              name={report.format === 'PDF' ? 'fileText' : 'barChart'}
+                              size={16}
+                              className={report.format === 'PDF' ? 'text-red-600' : 'text-green-600'}
                             />
                           </div>
                           <div className="ml-3">
@@ -381,11 +377,10 @@ export default function ReportsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          report.format === 'PDF' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${report.format === 'PDF'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                          }`}>
                           {report.format}
                         </span>
                       </td>
@@ -478,9 +473,9 @@ export default function ReportsPage() {
 
       {/* Generate Report Modal */}
       {showGenerateModal && selectedTemplate && (
-        <Modal 
-          isOpen={showGenerateModal} 
-          onClose={() => setShowGenerateModal(false)} 
+        <Modal
+          isOpen={showGenerateModal}
+          onClose={() => setShowGenerateModal(false)}
           title={`Generate ${selectedTemplate.name}`}
         >
           <div className="p-6">
