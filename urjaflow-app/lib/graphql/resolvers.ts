@@ -1,63 +1,86 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
-import { PermissionService } from '../permissions';
+import { PermissionService, Permission } from '../permissions';
 
 const prisma = new PrismaClient();
+
+export interface GraphQLContext {
+  user: User | null;
+  prisma: PrismaClient;
+}
+
+interface PaginationInput {
+  page?: number;
+  limit?: number;
+}
+
+interface DeviceFilter {
+  type?: string;
+  status?: string;
+  organizationId?: string;
+}
+
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+type GenericInput = Record<string, unknown>;
 
 export const resolvers = {
   Query: {
     // Authentication
-    me: async (_: any, __: any, { user }: { user: any }) => {
+    me: async (_: unknown, __: unknown, { user }: GraphQLContext) => {
       if (!user) throw new GraphQLError('Authentication required');
       return user;
     },
 
     // Organizations
-    organizations: async (_: any, __: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_ORGANIZATION')) {
+    organizations: async (_: unknown, __: unknown, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_ORGANIZATION)) {
         throw new GraphQLError('Insufficient permissions');
       }
-      
-      if (user.role === 'SUPER_ADMIN') {
+
+      if (user?.role === 'SUPER_ADMIN') {
         return prisma.organization.findMany();
       }
-      
+
       return prisma.organization.findMany({
-        where: { id: user.organizationId }
+        where: { id: user?.organizationId || undefined }
       });
     },
 
-    organization: async (_: any, { id }: { id: string }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_ORGANIZATION')) {
+    organization: async (_: unknown, { id }: { id: string }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_ORGANIZATION)) {
         throw new GraphQLError('Insufficient permissions');
       }
-      
+
       const org = await prisma.organization.findUnique({ where: { id } });
       if (!org) throw new GraphQLError('Organization not found');
-      
+
       if (!PermissionService.canAccessOrganization(user, id)) {
         throw new GraphQLError('Access denied');
       }
-      
+
       return org;
     },
 
     // Devices
-    devices: async (_: any, { filter, pagination }: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_DEVICES')) {
+    devices: async (_: unknown, { filter, pagination }: { filter?: DeviceFilter; pagination?: PaginationInput }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
-      const where: any = {};
-      
+      const where: import('@prisma/client').Prisma.DeviceWhereInput = {};
+
       if (filter?.type) where.type = filter.type;
       if (filter?.status) where.status = filter.status;
-      
+
       // Apply organization filter
-      if (user.role !== 'SUPER_ADMIN') {
-        where.organizationId = user.organizationId;
+      if (user?.role !== 'SUPER_ADMIN') {
+        where.organizationId = user?.organizationId;
       } else if (filter?.organizationId) {
         where.organizationId = filter.organizationId;
       }
@@ -77,8 +100,8 @@ export const resolvers = {
       });
     },
 
-    device: async (_: any, { id }: { id: string }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_DEVICES')) {
+    device: async (_: unknown, { id }: { id: string }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -92,16 +115,16 @@ export const resolvers = {
 
       if (!device) throw new GraphQLError('Device not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
       return device;
     },
 
-    deviceReadings: async (_: any, { deviceId, dateRange, pagination }: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_DEVICES')) {
+    deviceReadings: async (_: unknown, { deviceId, dateRange, pagination }: { deviceId: string; dateRange?: DateRange; pagination?: PaginationInput }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -109,12 +132,12 @@ export const resolvers = {
       const device = await prisma.device.findUnique({ where: { id: deviceId } });
       if (!device) throw new GraphQLError('Device not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
-      const where: any = { deviceId };
+      const where: import('@prisma/client').Prisma.DeviceReadingWhereInput = { deviceId };
       if (dateRange) {
         where.timestamp = {
           gte: new Date(dateRange.startDate),
@@ -134,15 +157,15 @@ export const resolvers = {
     },
 
     // Users
-    users: async (_: any, { organizationId, pagination }: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_USERS')) {
+    users: async (_: unknown, { organizationId, pagination }: { organizationId?: string; pagination?: PaginationInput }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_USERS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
-      const where: any = {};
-      
-      if (user.role !== 'SUPER_ADMIN') {
-        where.organizationId = user.organizationId;
+      const where: import('@prisma/client').Prisma.UserWhereInput = {};
+
+      if (user?.role !== 'SUPER_ADMIN') {
+        where.organizationId = user?.organizationId;
       } else if (organizationId) {
         where.organizationId = organizationId;
       }
@@ -161,8 +184,8 @@ export const resolvers = {
       });
     },
 
-    user: async (_: any, { id }: { id: string }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_USERS')) {
+    user: async (_: unknown, { id }: { id: string }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_USERS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -190,20 +213,20 @@ export const resolvers = {
       });
     },
 
-    plan: async (_: any, { id }: { id: string }) => {
+    plan: async (_: unknown, { id }: { id: string }) => {
       return prisma.plan.findUnique({ where: { id } });
     },
 
     // Analytics
-    analytics: async (_: any, { organizationId, dateRange }: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_ANALYTICS')) {
+    analytics: async (_: unknown, { organizationId, dateRange }: { organizationId?: string; dateRange?: DateRange }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_ANALYTICS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
-      const targetOrgId = user.role === 'SUPER_ADMIN' ? organizationId : user.organizationId;
-      
+      const targetOrgId = user?.role === 'SUPER_ADMIN' ? organizationId : user?.organizationId;
+
       // Get device readings for the period
-      const where: any = {};
+      const where: import('@prisma/client').Prisma.DeviceReadingWhereInput = {};
       if (dateRange) {
         where.timestamp = {
           gte: new Date(dateRange.startDate),
@@ -227,8 +250,8 @@ export const resolvers = {
       const totalGeneration = readings.reduce((sum, r) => sum + (r.generationKW || 0), 0);
       const totalConsumption = readings.reduce((sum, r) => sum + (r.consumptionKW || 0), 0);
       const netEnergy = totalGeneration - totalConsumption;
-      const avgEfficiency = readings.length > 0 
-        ? readings.reduce((sum, r) => sum + (r.efficiency || 0), 0) / readings.length 
+      const avgEfficiency = readings.length > 0
+        ? readings.reduce((sum, r) => sum + (r.efficiency || 0), 0) / readings.length
         : 0;
 
       return {
@@ -248,15 +271,15 @@ export const resolvers = {
     },
 
     // Support
-    supportTickets: async (_: any, { organizationId, pagination }: any, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'VIEW_SUPPORT_TICKETS')) {
+    supportTickets: async (_: unknown, { organizationId, pagination }: { organizationId?: string; pagination?: PaginationInput }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.VIEW_SUPPORT_TICKETS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
-      const where: any = {};
-      
-      if (user.role !== 'SUPER_ADMIN') {
-        where.organizationId = user.organizationId;
+      const where: import('@prisma/client').Prisma.SupportTicketWhereInput = {};
+
+      if (user?.role !== 'SUPER_ADMIN') {
+        where.organizationId = user?.organizationId;
       } else if (organizationId) {
         where.organizationId = organizationId;
       }
@@ -276,8 +299,8 @@ export const resolvers = {
       });
     },
 
-    faqs: async (_: any, { category }: { category?: string }) => {
-      const where: any = { active: true };
+    faqs: async (_: unknown, { category }: { category?: string }) => {
+      const where: import('@prisma/client').Prisma.FAQWhereInput = { active: true };
       if (category) where.category = category;
 
       return prisma.fAQ.findMany({
@@ -287,14 +310,14 @@ export const resolvers = {
     },
 
     // Notifications
-    notifications: async (_: any, { userId, organizationId, pagination }: any, { user }: { user: any }) => {
-      const where: any = {};
-      
-      if (user.role === 'SUPER_ADMIN') {
+    notifications: async (_: unknown, { userId, organizationId, pagination }: { userId?: string; organizationId?: string; pagination?: PaginationInput }, { user }: GraphQLContext) => {
+      const where: import('@prisma/client').Prisma.NotificationWhereInput = {};
+
+      if (user?.role === 'SUPER_ADMIN') {
         if (userId) where.userId = userId;
         if (organizationId) where.organizationId = organizationId;
       } else {
-        where.organizationId = user.organizationId;
+        where.organizationId = user?.organizationId;
         if (userId) where.userId = userId;
       }
 
@@ -316,9 +339,9 @@ export const resolvers = {
 
   Mutation: {
     // Authentication
-    login: async (_: any, { input }: { input: { email: string; password: string } }) => {
+    login: async (_: unknown, { input }: { input: { email: string; password: string } }) => {
       const { email, password } = input;
-      
+
       const user = await prisma.user.findUnique({
         where: { email },
         include: { organization: true }
@@ -352,21 +375,23 @@ export const resolvers = {
     },
 
     // Organizations
-    createOrganization: async (_: any, { input }: { input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'UPDATE_ORGANIZATION')) {
+    createOrganization: async (_: unknown, { input }: { input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.UPDATE_ORGANIZATION)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
+      const data = input as import('@prisma/client').Prisma.OrganizationCreateInput;
+
       return prisma.organization.create({
         data: {
-          ...input,
-          settings: input.settings ? JSON.stringify(input.settings) : null
+          ...data,
+          settings: data.settings ? JSON.stringify(data.settings) : null
         }
       });
     },
 
-    updateOrganization: async (_: any, { id, input }: { id: string; input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'UPDATE_ORGANIZATION')) {
+    updateOrganization: async (_: unknown, { id, input }: { id: string; input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.UPDATE_ORGANIZATION)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -374,24 +399,31 @@ export const resolvers = {
         throw new GraphQLError('Access denied');
       }
 
+      const data = input as import('@prisma/client').Prisma.OrganizationUpdateInput;
+
       return prisma.organization.update({
         where: { id },
         data: {
-          ...input,
-          settings: input.settings ? JSON.stringify(input.settings) : undefined
+          ...data,
+          settings: data.settings ? JSON.stringify(data.settings) : undefined
         }
       });
     },
 
     // Devices
-    createDevice: async (_: any, { input }: { input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'CREATE_DEVICES')) {
+    createDevice: async (_: unknown, { input }: { input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.CREATE_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
-      const deviceData: any = {
-        ...input,
-        organizationId: input.organizationId || user.organizationId
+      const { organizationId, ...data } = input as { organizationId?: string } & GenericInput;
+
+      const deviceData: import('@prisma/client').Prisma.DeviceCreateInput = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(data as any),
+        organization: {
+          connect: { id: organizationId || user?.organizationId || '' }
+        }
       };
 
       return prisma.device.create({
@@ -403,8 +435,8 @@ export const resolvers = {
       });
     },
 
-    updateDevice: async (_: any, { id, input }: { id: string; input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'UPDATE_DEVICES')) {
+    updateDevice: async (_: unknown, { id, input }: { id: string; input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.UPDATE_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -412,14 +444,16 @@ export const resolvers = {
       const device = await prisma.device.findUnique({ where: { id } });
       if (!device) throw new GraphQLError('Device not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
+      const data = input as import('@prisma/client').Prisma.DeviceUpdateInput;
+
       return prisma.device.update({
         where: { id },
-        data: input,
+        data,
         include: {
           user: true,
           organization: true,
@@ -427,8 +461,8 @@ export const resolvers = {
       });
     },
 
-    deleteDevice: async (_: any, { id }: { id: string }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'DELETE_DEVICES')) {
+    deleteDevice: async (_: unknown, { id }: { id: string }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.DELETE_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -436,65 +470,76 @@ export const resolvers = {
       const device = await prisma.device.findUnique({ where: { id } });
       if (!device) throw new GraphQLError('Device not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
       await prisma.device.delete({ where: { id } });
-      
+
       return { success: true, message: 'Device deleted successfully' };
     },
 
-    addDeviceReading: async (_: any, { input }: { input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'UPDATE_DEVICES')) {
+    addDeviceReading: async (_: unknown, { input }: { input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.UPDATE_DEVICES)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
+      const { deviceId, metadata, ...data } = input as { deviceId: string; metadata?: unknown } & GenericInput;
+
       // Check device access
-      const device = await prisma.device.findUnique({ where: { id: input.deviceId } });
+      const device = await prisma.device.findUnique({ where: { id: deviceId } });
       if (!device) throw new GraphQLError('Device not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
       return prisma.deviceReading.create({
         data: {
-          ...input,
-          metadata: input.metadata ? JSON.stringify(input.metadata) : null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(data as any),
+          device: { connect: { id: deviceId } },
+          metadata: metadata ? JSON.stringify(metadata) : null
         }
       });
     },
 
     // Users
-    createUser: async (_: any, { input }: { input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'CREATE_USERS')) {
+    createUser: async (_: unknown, { input }: { input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.CREATE_USERS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
+      const { organizationId, role, ...data } = input as { organizationId?: string; role: string } & GenericInput;
+
       // Check role upgrade permissions
-      if (!PermissionService.canUpgradeRole(user, input.role)) {
+      if (!PermissionService.canUpgradeRole(user, role)) {
         throw new GraphQLError('Cannot assign higher role');
       }
 
       const hashedPassword = await bcrypt.hash('tempPassword123', 10);
 
+      const userData: import('@prisma/client').Prisma.UserCreateInput = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(data as any),
+        role,
+        password: hashedPassword,
+        emailVerified: new Date(),
+        organization: organizationId ? { connect: { id: organizationId } } : undefined
+      };
+
       return prisma.user.create({
-        data: {
-          ...input,
-          password: hashedPassword,
-          emailVerified: new Date()
-        },
+        data: userData,
         include: {
           organization: true,
         }
       });
     },
 
-    updateUser: async (_: any, { id, input }: { id: string; input: any }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'UPDATE_USERS')) {
+    updateUser: async (_: unknown, { id, input }: { id: string; input: unknown }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.UPDATE_USERS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
@@ -505,14 +550,18 @@ export const resolvers = {
         throw new GraphQLError('Access denied');
       }
 
+      const { password, role, ...data } = input as { password?: string; role?: string } & GenericInput;
+
       // Check role upgrade permissions
-      if (input.role && !PermissionService.canUpgradeRole(user, input.role)) {
+      if (role && !PermissionService.canUpgradeRole(user, role)) {
         throw new GraphQLError('Cannot assign higher role');
       }
 
-      const updateData: any = { ...input };
-      if (input.password) {
-        updateData.password = await bcrypt.hash(input.password, 10);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateData: import('@prisma/client').Prisma.UserUpdateInput = { ...(data as any) };
+      if (role) updateData.role = role;
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
       }
 
       return prisma.user.update({
@@ -525,11 +574,19 @@ export const resolvers = {
     },
 
     // Support
-    createSupportTicket: async (_: any, { input }: { input: any }, { user }: { user: any }) => {
-      const ticketData: any = {
-        ...input,
-        userId: user.id,
-        organizationId: input.organizationId || user.organizationId
+    createSupportTicket: async (_: unknown, { input }: { input: unknown }, { user }: GraphQLContext) => {
+      if (!user) throw new GraphQLError('Authentication required');
+
+      const { organizationId, ...data } = input as { organizationId?: string } & GenericInput;
+
+      const inputData = data as Record<string, unknown>;
+      const ticketData: import('@prisma/client').Prisma.SupportTicketCreateInput = {
+        subject: typeof inputData.subject === 'string' ? inputData.subject : '',
+        description: typeof inputData.description === 'string' ? inputData.description : '',
+        category: typeof inputData.category === 'string' ? inputData.category : 'General',
+        priority: typeof inputData.priority === 'string' ? inputData.priority : 'MEDIUM',
+        user: { connect: { id: user.id } },
+        organization: { connect: { id: organizationId || user.organizationId || '' } }
       };
 
       return prisma.supportTicket.create({
@@ -541,20 +598,20 @@ export const resolvers = {
       });
     },
 
-    updateSupportTicket: async (_: any, { id, status, assignedTo }: { id: string; status?: string; assignedTo?: string }, { user }: { user: any }) => {
-      if (!PermissionService.hasPermission(user, 'MANAGE_SUPPORT_TICKETS')) {
+    updateSupportTicket: async (_: unknown, { id, status, assignedTo }: { id: string; status?: string; assignedTo?: string }, { user }: GraphQLContext) => {
+      if (!PermissionService.hasPermission(user, Permission.MANAGE_SUPPORT_TICKETS)) {
         throw new GraphQLError('Insufficient permissions');
       }
 
       const ticket = await prisma.supportTicket.findUnique({ where: { id } });
       if (!ticket) throw new GraphQLError('Ticket not found');
 
-      if (user.role !== 'SUPER_ADMIN' && 
-          ticket.organizationId !== user.organizationId) {
+      if (user?.role !== 'SUPER_ADMIN' &&
+        ticket.organizationId !== user?.organizationId) {
         throw new GraphQLError('Access denied');
       }
 
-      const updateData: any = {};
+      const updateData: import('@prisma/client').Prisma.SupportTicketUpdateInput = {};
       if (status) updateData.status = status;
       if (assignedTo) updateData.assignedTo = assignedTo;
       if (status === 'RESOLVED') updateData.resolvedAt = new Date();
