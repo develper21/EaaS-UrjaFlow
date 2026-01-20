@@ -37,7 +37,7 @@ function SignInForm() {
 
       router.push(callbackUrl);
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
@@ -46,12 +46,12 @@ function SignInForm() {
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     setLoading(true);
     setError('');
-    
+
     try {
       await signIn(provider, {
         callbackUrl,
       });
-    } catch (err) {
+    } catch {
       setError(`Failed to sign in with ${provider}`);
       setLoading(false);
     }
