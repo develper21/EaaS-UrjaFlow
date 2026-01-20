@@ -1,9 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+interface Invoice {
+  id: string;
+  userId: string | null;
+  organizationId: string | null;
+  subscriptionId: string | null;
+  invoiceNumber: string;
+  amount: number;
+  dueDate: Date;
+  status: string;
+  stripeInvoiceId?: string | null;
+  metadata: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ParsedInvoice {
+  id: string;
+  userId: string | null;
+  organizationId: string | null;
+  subscriptionId: string | null;
+  invoiceNumber: string;
+  amount: number;
+  dueDate: Date;
+  status: string;
+  stripeInvoiceId?: string | null;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -49,10 +79,10 @@ export async function GET(request: NextRequest) {
     ];
 
     // Parse metadata JSON
-    const parsedInvoices = invoices.map((invoice: any) => ({
+    const parsedInvoices = invoices.map((invoice: Invoice) => ({
       ...invoice,
       metadata: invoice.metadata ? JSON.parse(invoice.metadata) : null,
-    }));
+    })) as ParsedInvoice[];
 
     return NextResponse.json({
       success: true,
