@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Icons, Icon } from '@/components/Icons';
+import { Icons, Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 import { StatCard } from '@/components/StatCard';
 
@@ -40,22 +39,14 @@ interface User {
 
 export default function OrganizationsPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showUserModal, setShowUserModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'settings'>('overview');
 
-  useEffect(() => {
-    if (session) {
-      fetchOrganizations();
-    }
-  }, [session]);
-
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = useCallback(async () => {
     try {
       const response = await fetch('/api/rest/organizations');
       if (response.ok) {
@@ -71,7 +62,13 @@ export default function OrganizationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      fetchOrganizations();
+    }
+  }, [session, fetchOrganizations]);
 
   const fetchUsers = async (orgId: string) => {
     try {
@@ -100,7 +97,7 @@ export default function OrganizationsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
           <p className="mt-2 text-gray-600">Manage your organizations and teams</p>
         </div>
-        
+
         <div className="text-center py-12">
           <Icon name="building2" size={64} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Organizations Found</h3>
@@ -125,7 +122,7 @@ export default function OrganizationsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Organization Management</h1>
           <p className="mt-2 text-gray-600">Manage {selectedOrg.name}</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <select
             value={selectedOrg.id}
@@ -144,7 +141,7 @@ export default function OrganizationsPage() {
               </option>
             ))}
           </select>
-          
+
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -187,20 +184,19 @@ export default function OrganizationsPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'overview', label: 'Overview', icon: 'barChart3' },
-            { id: 'users', label: 'Users', icon: 'users' },
-            { id: 'settings', label: 'Settings', icon: 'settings' },
+            { id: 'overview' as const, label: 'Overview', icon: 'barChart' as IconName },
+            { id: 'users' as const, label: 'Users', icon: 'users' as IconName },
+            { id: 'settings' as const, label: 'Settings', icon: 'settings' as IconName },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
-              <Icon name={tab.icon as any} size={16} className="mr-2" />
+              <Icon name={tab.icon} size={16} className="mr-2" />
               {tab.label}
             </button>
           ))}
@@ -228,11 +224,10 @@ export default function OrganizationsPage() {
               <div>
                 <dt className="text-sm font-medium text-gray-500">Status</dt>
                 <dd className="mt-1">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    selectedOrg.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedOrg.isActive
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                    }`}>
                     {selectedOrg.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </dd>
@@ -259,7 +254,6 @@ export default function OrganizationsPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
             <button
-              onClick={() => setShowUserModal(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
             >
               <Icon name="userPlus" className="w-4 h-4 mr-2" />
@@ -310,11 +304,10 @@ export default function OrganizationsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -350,7 +343,7 @@ export default function OrganizationsPage() {
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Domain</label>
                 <input
@@ -407,7 +400,7 @@ export default function OrganizationsPage() {
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Slug</label>
                 <input
