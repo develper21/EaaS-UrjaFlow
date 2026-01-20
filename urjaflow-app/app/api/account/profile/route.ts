@@ -11,7 +11,28 @@ const profileSchema = z.object({
   address: z.string().max(500).optional(),
 });
 
-export async function GET(request: NextRequest) {
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  company: string | null;
+  address: string | null;
+  createdAt: Date;
+  role: string;
+}
+
+interface UpdatedProfile {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  company: string | null;
+  address: string | null;
+  updatedAt: Date;
+}
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -37,7 +58,7 @@ export async function GET(request: NextRequest) {
       WHERE id = ${session.user.id}
     `;
 
-    if (!user || (user as any[]).length === 0) {
+    if (!user || (user as UserProfile[]).length === 0) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
@@ -46,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: (user as any[])[0],
+      data: (user as UserProfile[])[0],
     });
   } catch (error) {
     console.error('Profile GET error:', error);
@@ -93,7 +114,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: (updatedUser as any[])[0],
+      data: (updatedUser as UpdatedProfile[])[0],
       message: 'Profile updated successfully',
     });
   } catch (error) {
