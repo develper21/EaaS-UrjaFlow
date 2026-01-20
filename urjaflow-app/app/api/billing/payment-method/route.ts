@@ -4,7 +4,7 @@ import stripe from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 // Get payment methods
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const authSession = await getServerSession();
     
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Create setup intent for adding new payment method
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const authSession = await getServerSession();
     
