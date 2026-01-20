@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       const organizationId = searchParams.get('organizationId') || context.user.organizationId;
 
       // Get devices to predict for
-      const where: any = {};
+      const where: import('@prisma/client').Prisma.DeviceWhereInput = {};
       if (deviceId) {
         where.id = deviceId;
       } else {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         try {
           // Train model
           const model = await EnergyPredictionService.trainModel(device.id, device.readings);
-          
+
           // Generate predictions
           const lastReading = device.readings[0]; // Most recent
           const prediction = await EnergyPredictionService.generatePredictions(
@@ -83,10 +83,12 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await requirePermission(Permission.VIEW_ANALYTICS)(async (req, context) => {
       const body = await req.json();
-      const { deviceId, organizationId } = body;
+      const { deviceId } = body;
 
       // Get device with historical data
       const device = await prisma.device.findUnique({
@@ -122,8 +124,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' && 
-          device.organizationId !== context.user.organizationId) {
+      if (context.user.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== context.user.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
@@ -162,10 +164,12 @@ export async function POST(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
