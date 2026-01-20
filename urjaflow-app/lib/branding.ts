@@ -83,7 +83,7 @@ export class BrandingService {
         <link rel="apple-touch-icon" href="${branding.logo}">
       `;
     }
-    
+
     return `
       <link rel="icon" type="image/x-icon" href="/favicon.ico">
       <link rel="icon" type="image/png" href="/favicon.png">
@@ -160,7 +160,7 @@ export class BrandingService {
     return url.hostname;
   }
 
-  static async getOrganizationByDomain(domain: string): Promise<Organization | null> {
+  static async getOrganizationByDomain(): Promise<Organization | null> {
     // This would typically query your database
     // For now, return null - implement based on your needs
     return null;
