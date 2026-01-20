@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Icon } from '@/components/Icons';
+import { Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 
 interface Notification {
@@ -166,7 +166,7 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (type: string): IconName => {
     switch (type) {
       case 'SUCCESS': return 'checkCircle';
       case 'WARNING': return 'alertTriangle';
@@ -202,7 +202,7 @@ export default function NotificationsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
           <p className="mt-2 text-gray-600">Manage your notifications and alert rules</p>
         </div>
-        
+
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
@@ -271,20 +271,19 @@ export default function NotificationsPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'notifications', label: 'Notifications', icon: 'bell' },
-            { id: 'rules', label: 'Alert Rules', icon: 'settings' },
-            { id: 'settings', label: 'Settings', icon: 'cog' },
+            { id: 'notifications' as const, label: 'Notifications', icon: 'bell' as IconName },
+            { id: 'rules' as const, label: 'Alert Rules', icon: 'settings' as IconName },
+            { id: 'settings' as const, label: 'Settings', icon: 'cog' as IconName },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
-              <Icon name={tab.icon as any} size={16} className="mr-2" />
+              <Icon name={tab.icon} size={16} className="mr-2" />
               {tab.label}
             </button>
           ))}
@@ -301,7 +300,7 @@ export default function NotificationsPage() {
                 <label className="text-sm font-medium text-gray-700">Filter:</label>
                 <select
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value as any)}
+                  onChange={(e) => setFilter(e.target.value as 'all' | 'unread' | 'read')}
                   className="rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                 >
                   <option value="all">All</option>
@@ -333,21 +332,20 @@ export default function NotificationsPage() {
             <div className="text-center py-12">
               <Icon name="bell" size={64} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Notifications</h3>
-              <p className="text-gray-600">You're all caught up! No new notifications.</p>
+              <p className="text-gray-600">You&apos;re all caught up! No new notifications.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`bg-white shadow rounded-lg p-6 ${
-                    !notification.read ? 'border-l-4 border-green-500' : ''
-                  }`}
+                  className={`bg-white shadow rounded-lg p-6 ${!notification.read ? 'border-l-4 border-green-500' : ''
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
                       <div className={`flex-shrink-0 rounded-full p-2 ${getNotificationColor(notification.type)}`}>
-                        <Icon name={getNotificationIcon(notification.type) as any} size={16} />
+                        <Icon name={getNotificationIcon(notification.type)} size={16} />
                       </div>
                       <div className="flex-1">
                         <h3 className={`text-lg font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
@@ -469,20 +467,18 @@ export default function NotificationsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          rule.enabled
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.enabled
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                          }`}>
                           {rule.enabled ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => toggleRule(rule.id, !rule.enabled)}
-                          className={`${
-                            rule.enabled ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
-                          } mr-3`}
+                          className={`${rule.enabled ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
+                            } mr-3`}
                         >
                           {rule.enabled ? 'Disable' : 'Enable'}
                         </button>
