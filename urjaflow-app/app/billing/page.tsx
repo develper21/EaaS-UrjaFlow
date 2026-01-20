@@ -11,7 +11,7 @@ import useSWR from 'swr';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function BillingPage() {
-  const { data: session } = useSession();
+  useSession();
 
   // Fetch billing data
   const { data: billingData, error, isLoading } = useSWR('/api/billing', fetcher, {
@@ -68,7 +68,7 @@ export default function BillingPage() {
       } else {
         alert(result.error || 'Failed to process payment');
       }
-    } catch (error) {
+    } catch {
       alert('An error occurred. Please try again.');
     }
   };
@@ -86,7 +86,7 @@ export default function BillingPage() {
       } else {
         alert(result.error || 'Failed to update payment method');
       }
-    } catch (error) {
+    } catch {
       alert('An error occurred. Please try again.');
     }
   };
@@ -94,7 +94,7 @@ export default function BillingPage() {
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       const response = await fetch(`/api/billing/invoice/${invoiceId}/download`);
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -108,7 +108,7 @@ export default function BillingPage() {
       } else {
         alert('Failed to download invoice');
       }
-    } catch (error) {
+    } catch {
       alert('An error occurred. Please try again.');
     }
   };
@@ -185,7 +185,7 @@ export default function BillingPage() {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleUpdatePaymentMethod}
                 className="text-sm font-medium text-green-600 hover:text-green-700"
               >
@@ -196,7 +196,7 @@ export default function BillingPage() {
             <div className="text-center py-8">
               <Icon name="creditCard" size={48} className="text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 mb-4">No payment method on file</p>
-              <button 
+              <button
                 onClick={handleUpdatePaymentMethod}
                 className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
               >
@@ -232,18 +232,17 @@ export default function BillingPage() {
                         {formatDate(invoice.paidAt || invoice.dueDate)}
                       </p>
                     </div>
-                    <div className={`rounded-full px-3 py-1 ${
-                      invoice.status === 'PAID' 
-                        ? 'bg-green-100 text-green-700' 
+                    <div className={`rounded-full px-3 py-1 ${invoice.status === 'PAID'
+                        ? 'bg-green-100 text-green-700'
                         : invoice.status === 'PENDING'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
                       <span className="text-sm font-medium">
                         {invoice.status.charAt(0) + invoice.status.slice(1).toLowerCase()}
                       </span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => handleDownloadInvoice(invoice.id)}
                       className="text-gray-600 hover:text-gray-900"
                     >
