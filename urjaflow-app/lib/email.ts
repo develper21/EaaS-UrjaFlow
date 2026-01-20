@@ -34,7 +34,20 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   }
 }
 
-export function generateNotificationEmail(type: string, data: any) {
+interface EmailNotificationData {
+  userName: string;
+  period?: string;
+  energyConsumed?: number;
+  amount?: number;
+  dueDate?: string;
+  generated?: number;
+  consumed?: number;
+  savings?: number;
+  efficiency?: number;
+  message?: string;
+}
+
+export function generateNotificationEmail(type: string, data: EmailNotificationData) {
   const templates = {
     billing: {
       subject: 'UrjaFlow Billing Receipt',
