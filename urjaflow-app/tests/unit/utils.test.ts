@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate, formatNumber, calculateCarbonSavings, calculateSavings } from '@/lib/utils';
+import { formatCurrency, formatNumber, calculateCarbonSavings, calculateSavings } from '@/lib/utils';
 
 describe('Utility Functions', () => {
   describe('formatCurrency', () => {
