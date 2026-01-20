@@ -10,6 +10,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Organization model for multi-tenancy
+model Organization {
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  domain            String?        @unique // Custom domain for white-labeling
+  logo              String?        // Company logo URL
+  primaryColor      String?        @default("#3b82f6") // Brand color
+  secondaryColor    String?        @default("#64748b") // Secondary brand color
+  plan              String         @default("BASIC") // BASIC, PROFESSIONAL, ENTERPRISE
+  maxUsers          Int            @default(5)
+  maxDevices        Int            @default(10)
+  settings          String?        // JSON string for organization settings
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Relations
+  users             User[]
+  subscriptions     OrganizationSubscription[]
+  devices           Device[]
+  invoices          Invoice[]
+  supportTickets    SupportTicket[]
+  notifications     Notification[]
+  
+  @@map("organizations")
+}
+
 // User model - Authentication and profile
 model User {
   id            String         @id @default(cuid())
@@ -18,9 +46,18 @@ model User {
   password      String? // Hashed password for credentials auth
   emailVerified DateTime?
   image         String?
-  role          String         @default("CUSTOMER") // CUSTOMER, ADMIN, SUPPORT
+  role          String         @default("VIEWER") // SUPER_ADMIN, ORG_ADMIN, MANAGER, VIEWER
+  phone         String?
+  company       String?
+  address       String?
+  isActive      Boolean        @default(true)
+  lastLoginAt   DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   
   // Relations
   accounts      Account[]
@@ -33,6 +70,9 @@ model User {
   
   // Preferences
   notificationPreferences String? // JSON string for notification settings
+  
+  @@unique([organizationId, email]) // Unique email within organization
+  @@map("users")
 }
 
 // NextAuth Account model
@@ -94,9 +134,32 @@ model Plan {
   updatedAt     DateTime       @updatedAt
   
   // Relations
-  subscriptions Subscription[]
+  subscriptions         Subscription[]
+  organizationSubscriptions OrganizationSubscription[]
   
   @@map("plans")
+}
+
+// Organization Subscriptions (for multi-tenancy)
+model OrganizationSubscription {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  planId               String
+  status               String             @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+  
+  @@map("organization_subscriptions")
 }
 
 // User Subscriptions
@@ -125,7 +188,8 @@ model Subscription {
 // IoT Devices
 model Device {
   id           String        @id @default(cuid())
-  userId       String
+  userId       String?
+  organizationId String?
   name         String
   type         String // SOLAR_PANEL, WIND_TURBINE, BATTERY, INVERTER, METER
   model        String?
@@ -138,8 +202,9 @@ model Device {
   updatedAt    DateTime      @updatedAt
   
   // Relations
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  readings DeviceReading[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  readings     DeviceReading[]
   
   @@map("devices")
 }
@@ -168,7 +233,8 @@ model DeviceReading {
 // Invoices and Billing
 model Invoice {
   id             String        @id @default(cuid())
-  userId         String
+  userId         String?
+  organizationId String?
   subscriptionId String?
   invoiceNumber  String        @unique
   amount         Float
@@ -183,8 +249,9 @@ model Invoice {
   updatedAt      DateTime      @updatedAt
   
   // Relations
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  subscription Subscription?   @relation(fields: [subscriptionId], references: [id])
   
   @@map("invoices")
 }
@@ -192,7 +259,8 @@ model Invoice {
 // Support Tickets
 model SupportTicket {
   id          String       @id @default(cuid())
-  userId      String
+  userId      String?
+  organizationId String?
   subject     String
   description String
   status      String       @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
@@ -204,7 +272,8 @@ model SupportTicket {
   updatedAt   DateTime     @updatedAt
   
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   
   @@map("support_tickets")
 }
@@ -227,6 +296,7 @@ model FAQ {
 model Notification {
   id        String           @id @default(cuid())
   userId    String?
+  organizationId String?
   title     String
   message   String
   type      String           @default("INFO") // INFO, SUCCESS, WARNING, ERROR, ALERT
@@ -235,7 +305,8 @@ model Notification {
   createdAt DateTime         @default(now())
   
   // Relations
-  user User? @relation(fields: [userId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   
   @@map("notifications")
 }
