@@ -16,9 +16,15 @@ export function startWebSocketServer() {
 
   const clients = new Set<WebSocket>();
 
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('✅ New WebSocket client connected');
+  wss.on('connection', (ws: WebSocket, req) => {
+    console.log('✅ New WebSocket client connected from', req.socket.remoteAddress);
     clients.add(ws);
+
+    // Send welcome message
+    ws.send(JSON.stringify({
+      type: 'status',
+      data: { message: 'Connected to UrjaFlow WebSocket server' }
+    }));
 
     ws.on('message', (message: Buffer) => {
       try {
@@ -33,17 +39,26 @@ export function startWebSocketServer() {
         });
       } catch (error) {
         console.error('❌ Error processing message:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          data: { message: 'Invalid message format' }
+        }));
       }
     });
 
-    ws.on('close', () => {
-      console.log('❌ Client disconnected');
+    ws.on('close', (code, reason) => {
+      console.log(`❌ Client disconnected (code: ${code}, reason: ${reason})`);
       clients.delete(ws);
     });
 
     ws.on('error', (error) => {
       console.error('❌ WebSocket error:', error);
       clients.delete(ws);
+    });
+
+    // Handle pong for keep-alive
+    ws.on('pong', () => {
+      // Keep connection alive
     });
   });
 
