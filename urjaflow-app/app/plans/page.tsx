@@ -75,7 +75,7 @@ const MOCK_PLANS: Plan[] = [
 ];
 
 export default function PlansPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
