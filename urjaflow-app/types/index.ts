@@ -68,7 +68,7 @@ export interface DeviceReading {
   current: number | null;
   temperature: number | null;
   efficiency: number | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
 }
 
 export interface Invoice {
@@ -143,7 +143,7 @@ export interface DashboardStats {
 }
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -154,7 +154,7 @@ export interface ApiResponse<T = any> {
 export interface RealtimeMessage {
   type: 'reading' | 'alert' | 'status';
   deviceId?: string;
-  data: any;
+  data: unknown;
   timestamp: Date;
 }
 
