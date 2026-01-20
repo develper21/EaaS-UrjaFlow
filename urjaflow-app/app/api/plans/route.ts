@@ -9,7 +9,7 @@ export async function GET() {
     });
 
     // Parse features JSON string to array
-    const parsedPlans = plans.map((plan: any) => ({
+    const parsedPlans = plans.map((plan) => ({
       ...plan,
       features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features,
     }));
