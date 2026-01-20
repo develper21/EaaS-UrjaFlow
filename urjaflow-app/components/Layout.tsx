@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { Icon, IconName } from './Icons';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,9 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: 'home' },
+  { name: 'Organizations', href: '/organizations', icon: 'building2' },
+  { name: 'Analytics', href: '/analytics', icon: 'barChart' },
+  { name: 'Reports', href: '/reports', icon: 'fileText' },
   { name: 'Plans', href: '/plans', icon: 'zap' },
   { name: 'Billing', href: '/billing', icon: 'creditCard' },
   { name: 'Support', href: '/support', icon: 'helpCircle' },
@@ -27,6 +31,22 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Icon name="zap" size={48} className="mx-auto mb-4 animate-pulse text-green-600" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/auth/signin' });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,11 +101,21 @@ export function Layout({ children }: LayoutProps) {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
                 <Icon name="user" size={20} className="text-green-700" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Demo User</p>
-                <p className="text-xs text-gray-500">demo@urjaflow.com</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {session?.user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {session?.user?.email}
+                </p>
               </div>
             </div>
+            <button
+              onClick={handleSignOut}
+              className="mt-3 w-full text-left text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-50"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </div>
@@ -110,9 +140,9 @@ export function Layout({ children }: LayoutProps) {
           </button>
 
           {/* Settings */}
-          <button className="rounded-lg p-2 text-gray-600 hover:bg-gray-100">
+          <Link href="/account" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100">
             <Icon name="settings" size={20} />
-          </button>
+          </Link>
         </header>
 
         {/* Page content */}
