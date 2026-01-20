@@ -7,6 +7,13 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const result = await requirePermission(Permission.EXPORT_DATA)(async (req, context) => {
+      if (!context.user) {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+
       const { searchParams } = new URL(req.url);
       const format = searchParams.get('format') || 'json';
       const organizationId = searchParams.get('organizationId') || context.user.organizationId;
@@ -15,38 +22,47 @@ export async function GET(request: NextRequest) {
       const startDate = searchParams.get('startDate');
       const endDate = searchParams.get('endDate');
 
+      if (!organizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Organization ID is required' },
+          { status: 400 }
+        );
+      }
+
       // Parse dates
       const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const end = endDate ? new Date(endDate) : new Date();
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' && 
-          organizationId !== context.user.organizationId) {
+      if (context.user.role !== 'SUPER_ADMIN' &&
+        organizationId !== context.user.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
         );
       }
 
-      let data: any = [];
+      let data: string | Record<string, unknown>[] = [];
       let filename: string;
       let contentType: string;
 
+      const targetOrgId = organizationId as string;
+
       switch (dataType) {
         case 'readings':
-          data = await exportReadings(organizationId, deviceId, start, end);
+          data = await exportReadings(targetOrgId, deviceId, start, end);
           filename = `readings_${new Date().toISOString().split('T')[0]}.${format}`;
           break;
         case 'devices':
-          data = await exportDevices(organizationId);
+          data = await exportDevices(targetOrgId);
           filename = `devices_${new Date().toISOString().split('T')[0]}.${format}`;
           break;
         case 'users':
-          data = await exportUsers(organizationId);
+          data = await exportUsers(targetOrgId);
           filename = `users_${new Date().toISOString().split('T')[0]}.${format}`;
           break;
         case 'invoices':
-          data = await exportInvoices(organizationId, start, end);
+          data = await exportInvoices(targetOrgId, start, end);
           filename = `invoices_${new Date().toISOString().split('T')[0]}.${format}`;
           break;
         default:
@@ -60,7 +76,7 @@ export async function GET(request: NextRequest) {
       switch (format.toLowerCase()) {
         case 'csv':
           contentType = 'text/csv';
-          data = convertToCSV(data);
+          data = convertToCSV(data as Record<string, unknown>[]);
           break;
         case 'json':
           contentType = 'application/json';
@@ -81,16 +97,18 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
 
 async function exportReadings(organizationId: string, deviceId: string | null, start: Date, end: Date) {
-  const where: any = {
+  const where: import('@prisma/client').Prisma.DeviceReadingWhereInput = {
     timestamp: { gte: start, lte: end },
     device: { organizationId }
   };
@@ -220,12 +238,12 @@ async function exportInvoices(organizationId: string, start: Date, end: Date) {
   }));
 }
 
-function convertToCSV(data: any[]): string {
+function convertToCSV(data: Record<string, unknown>[]): string {
   if (data.length === 0) return '';
 
   const headers = Object.keys(data[0]);
   const csvHeaders = headers.join(',');
-  
+
   const csvRows = data.map(row => {
     return headers.map(header => {
       const value = row[header];
