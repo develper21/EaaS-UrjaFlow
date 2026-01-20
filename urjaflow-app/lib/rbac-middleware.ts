@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { PermissionService, Permission } from './permissions';
 import { prisma } from './prisma';
+import { User, Organization } from '@prisma/client';
+
+export interface RBACContext {
+  params?: Record<string, string | string[]>;
+  user?: User | null;
+  organization?: Organization | null;
+}
 
 export interface RBACMiddlewareOptions {
   requiredPermissions?: Permission[];
@@ -27,9 +34,9 @@ export async function rbacMiddleware(
   }
 
   // Get token from request
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET
   });
 
   if (!token) {
@@ -104,21 +111,21 @@ export async function rbacMiddleware(
     }
   }
 
-  return { 
-    user, 
+  return {
+    user,
     organization: user.organization,
-    authorized: true 
+    authorized: true
   };
 }
 
 // Higher-order function for API routes
 export function withRBAC(
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>,
+  handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>,
   options: RBACMiddlewareOptions
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: RBACContext) => {
     const rbacResult = await rbacMiddleware(request, options);
-    
+
     // If rbacMiddleware returned a NextResponse, it's an error
     if (rbacResult instanceof NextResponse) {
       return rbacResult;
@@ -133,30 +140,30 @@ export function withRBAC(
 }
 
 // Permission checking decorators for API routes
-export const requirePermission = (permission: Permission) => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requirePermission = (permission: Permission) =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { requiredPermissions: [permission] });
 
-export const requirePermissions = (permissions: Permission[]) => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requirePermissions = (permissions: Permission[]) =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { requiredPermissions: permissions });
 
-export const requireRole = (role: string) => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requireRole = (role: string) =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { allowedRoles: [role] });
 
-export const requireRoles = (roles: string[]) => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requireRoles = (roles: string[]) =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { allowedRoles: roles });
 
-export const requireOrganization = () => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requireOrganization = () =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { requireOrganization: true });
 
-export const requireOrgAdmin = () => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requireOrgAdmin = () =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { allowedRoles: ['SUPER_ADMIN', 'ORG_ADMIN'] });
 
-export const requireManager = () => 
-  (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => 
+export const requireManager = () =>
+  (handler: (req: NextRequest, context: RBACContext) => Promise<NextResponse>) =>
     withRBAC(handler, { allowedRoles: ['SUPER_ADMIN', 'ORG_ADMIN', 'MANAGER'] });
