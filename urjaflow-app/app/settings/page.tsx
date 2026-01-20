@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Icon } from '@/components/Icons';
+import { Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 
 interface UserSettings {
@@ -128,7 +128,7 @@ export default function SettingsPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to save settings' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to save settings' });
     } finally {
       setIsSaving(false);
@@ -152,7 +152,7 @@ export default function SettingsPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to save organization settings' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to save organization settings' });
     } finally {
       setIsSaving(false);
@@ -170,11 +170,10 @@ export default function SettingsPage() {
 
       {/* Message */}
       {message && (
-        <div className={`rounded-md p-4 ${
-          message.type === 'success' 
-            ? 'bg-green-50 text-green-800' 
-            : 'bg-red-50 text-red-800'
-        }`}>
+        <div className={`rounded-md p-4 ${message.type === 'success'
+          ? 'bg-green-50 text-green-800'
+          : 'bg-red-50 text-red-800'
+          }`}>
           <div className="flex">
             <div className="flex-shrink-0">
               <Icon name={message.type === 'success' ? 'checkCircle' : 'alertCircle'} size={20} />
@@ -190,21 +189,20 @@ export default function SettingsPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'profile', label: 'Profile', icon: 'user' },
-            { id: 'preferences', label: 'Preferences', icon: 'settings' },
-            { id: 'notifications', label: 'Notifications', icon: 'bell' },
-            { id: 'organization', label: 'Organization', icon: 'building2' },
+            { id: 'profile' as const, label: 'Profile', icon: 'user' as IconName },
+            { id: 'preferences' as const, label: 'Preferences', icon: 'settings' as IconName },
+            { id: 'notifications' as const, label: 'Notifications', icon: 'bell' as IconName },
+            { id: 'organization' as const, label: 'Organization', icon: 'building2' as IconName },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
-              <Icon name={tab.icon as any} size={16} className="mr-2" />
+              <Icon name={tab.icon} size={16} className="mr-2" />
               {tab.label}
             </button>
           ))}
@@ -226,7 +224,7 @@ export default function SettingsPage() {
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email Address</label>
                 <input
@@ -289,7 +287,7 @@ export default function SettingsPage() {
                 <Icon name="lock" size={16} className="mr-2" />
                 Change Password
               </button>
-              
+
               <button
                 onClick={() => setShow2FAModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ml-4"
@@ -311,7 +309,7 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-gray-700">Theme</label>
                 <select
                   value={userSettings.theme}
-                  onChange={(e) => setUserSettings(prev => ({ ...prev, theme: e.target.value as any }))}
+                  onChange={(e) => setUserSettings(prev => ({ ...prev, theme: e.target.value as 'light' | 'dark' | 'system' }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="light">Light</option>
@@ -397,7 +395,7 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <h4 className="text-md font-medium text-gray-900">Notification Channels</h4>
-                
+
                 <label className="flex items-center">
                   <input
                     type="checkbox"
@@ -440,7 +438,7 @@ export default function SettingsPage() {
 
               <div className="space-y-4">
                 <h4 className="text-md font-medium text-gray-900">Notification Types</h4>
-                
+
                 <label className="flex items-center">
                   <input
                     type="checkbox"
@@ -582,7 +580,7 @@ export default function SettingsPage() {
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">New Password</label>
                 <input
@@ -626,7 +624,7 @@ export default function SettingsPage() {
               <Icon name="shield" size={64} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Enable Two-Factor Authentication</h3>
               <p className="text-gray-600 mb-6">Add an extra layer of security to your account</p>
-              
+
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-700 mb-2">Scan this QR code with your authenticator app:</p>
                 <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg mx-auto flex items-center justify-center">
