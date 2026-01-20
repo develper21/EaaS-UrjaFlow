@@ -4,6 +4,15 @@ import { Permission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { BenchmarkService } from '@/lib/analytics/benchmarks';
 
+interface DeviceWhereClause {
+  organizationId: string;
+  id?: string;
+}
+
+interface ApiError extends Error {
+  status?: number;
+}
+
 // GET /api/analytics/benchmarks - Get industry benchmarks and comparisons
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +44,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get devices and readings
-      const where: any = { organizationId };
+      const where: DeviceWhereClause = { organizationId };
       if (deviceId) {
         where.id = deviceId;
       }
@@ -91,10 +100,11 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: apiError.message },
+      { status: apiError.status || 500 }
     );
   }
 }
@@ -102,7 +112,7 @@ export async function GET(request: NextRequest) {
 // GET /api/analytics/benchmarks/industry - Get industry benchmarks only
 export async function INDUSTRY(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req, context) => {
+    const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req) => {
       const { searchParams } = new URL(req.url);
       const category = searchParams.get('category');
 
@@ -123,10 +133,11 @@ export async function INDUSTRY(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: apiError.message },
+      { status: apiError.status || 500 }
     );
   }
 }
@@ -134,7 +145,7 @@ export async function INDUSTRY(request: NextRequest) {
 // POST /api/analytics/benchmarks/compare - Compare with peer organizations
 export async function POST(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req, context) => {
+    const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req) => {
       const body = await req.json();
       const { organizationIds, metrics } = body;
 
@@ -196,10 +207,11 @@ export async function POST(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: apiError.message },
+      { status: apiError.status || 500 }
     );
   }
 }
