@@ -62,7 +62,7 @@ async function main() {
 
   // Create demo users
   const hashedPassword = await bcrypt.hash('demo123', 10);
-  
+
   const demoUser = await prisma.user.create({
     data: {
       email: 'demo@urjaflow.com',
@@ -74,7 +74,7 @@ async function main() {
     },
   });
 
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: 'admin@urjaflow.com',
       name: 'Admin User',
@@ -84,7 +84,7 @@ async function main() {
     },
   });
 
-  const orgAdmin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: 'org.admin@techsolutions.com',
       name: 'Org Admin',
@@ -95,7 +95,7 @@ async function main() {
     },
   });
 
-  const manager = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: 'manager@techsolutions.com',
       name: 'Manager User',
@@ -109,7 +109,7 @@ async function main() {
   console.log('✅ Created users');
 
   // Create subscription plans
-  const basicPlan = await prisma.plan.create({
+  await prisma.plan.create({
     data: {
       name: 'Basic',
       description: 'Perfect for small homes and apartments',
@@ -239,7 +239,7 @@ async function main() {
     },
   });
 
-  const inverter = await prisma.device.create({
+  await prisma.device.create({
     data: {
       userId: demoUser.id,
       name: 'Solar Inverter',
@@ -275,15 +275,15 @@ async function main() {
   for (let i = 0; i < 24; i++) {
     const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
     const hour = timestamp.getHours();
-    
+
     // Solar generation varies by time of day (peak at noon)
     const solarMultiplier = Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));
     const generation = 3.5 * solarMultiplier + Math.random() * 0.5;
-    
+
     // Consumption varies (higher in morning and evening)
     const consumptionBase = hour < 6 || hour > 22 ? 0.5 : hour > 8 && hour < 18 ? 2.0 : 3.5;
     const consumption = consumptionBase + Math.random() * 0.5;
-    
+
     // Battery level
     const batteryLevel = 60 + Math.random() * 30;
 
@@ -323,7 +323,7 @@ async function main() {
   console.log('✅ Created device readings');
 
   // Create invoices
-  const invoice1 = await prisma.invoice.create({
+  await prisma.invoice.create({
     data: {
       userId: demoUser.id,
       subscriptionId: subscription.id,
@@ -341,7 +341,7 @@ async function main() {
     },
   });
 
-  const invoice2 = await prisma.invoice.create({
+  await prisma.invoice.create({
     data: {
       userId: demoUser.id,
       subscriptionId: subscription.id,
@@ -359,7 +359,7 @@ async function main() {
     },
   });
 
-  const invoice3 = await prisma.invoice.create({
+  await prisma.invoice.create({
     data: {
       userId: demoUser.id,
       subscriptionId: subscription.id,
