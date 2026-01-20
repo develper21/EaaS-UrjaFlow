@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { BrandingService, BrandingConfig } from '@/lib/branding';
 import { Organization } from '@prisma/client';
+import Image from 'next/image';
 
 interface BrandingContextType {
   branding: BrandingConfig;
@@ -18,15 +19,18 @@ interface BrandingProviderProps {
 }
 
 export function BrandingProvider({ children, organization }: BrandingProviderProps) {
-  const [branding, setBranding] = useState<BrandingConfig>(BrandingService.getDefaultBranding());
+  const [customBranding, setCustomBranding] = useState<Partial<BrandingConfig>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Load organization branding
-    const orgBranding = BrandingService.getOrganizationBranding(organization || null);
-    setBranding(orgBranding);
-    setIsLoading(false);
+  // Derive base branding from organization prop
+  const baseBranding = useMemo(() => {
+    return BrandingService.getOrganizationBranding(organization || null);
   }, [organization]);
+
+  // Merge base branding with any local overrides
+  const branding = useMemo(() => {
+    return { ...baseBranding, ...customBranding };
+  }, [baseBranding, customBranding]);
 
   useEffect(() => {
     // Apply CSS variables to document
@@ -56,8 +60,13 @@ export function BrandingProvider({ children, organization }: BrandingProviderPro
     };
   }, [branding]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const updateBranding = (config: Partial<BrandingConfig>) => {
-    setBranding(prev => ({ ...prev, ...config }));
+    setCustomBranding(prev => ({ ...prev, ...config }));
   };
 
   const value = {
@@ -84,9 +93,9 @@ export function useBranding() {
 // Brand-aware components
 export function BrandHeader({ className = '' }: { className?: string }) {
   const { branding } = useBranding();
-  
+
   return (
-    <header 
+    <header
       className={`header-brand ${className}`}
       style={{
         backgroundColor: branding.primaryColor,
@@ -94,10 +103,12 @@ export function BrandHeader({ className = '' }: { className?: string }) {
     >
       <div className="flex items-center space-x-3">
         {branding.logo && (
-          <img 
-            src={branding.logo} 
+          <Image
+            src={branding.logo}
             alt={branding.name}
-            className="h-8 w-8 rounded"
+            width={32}
+            height={32}
+            className="rounded"
           />
         )}
         <h1 className="text-xl font-bold text-white">{branding.name}</h1>
@@ -106,25 +117,24 @@ export function BrandHeader({ className = '' }: { className?: string }) {
   );
 }
 
-export function BrandButton({ 
-  children, 
+export function BrandButton({
+  children,
   variant = 'primary',
   className = '',
-  ...props 
-}: { 
+  ...props
+}: {
   children: ReactNode;
   variant?: 'primary' | 'secondary';
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const { branding } = useBranding();
-  
+  // branding is not used directly here because CSS variables are applied globally
   const baseClasses = 'px-4 py-2 rounded font-medium transition-colors';
-  const variantClasses = variant === 'primary' 
-    ? 'brand-primary' 
+  const variantClasses = variant === 'primary'
+    ? 'brand-primary'
     : 'brand-secondary';
-  
+
   return (
-    <button 
+    <button
       className={`${baseClasses} ${variantClasses} ${className}`}
       {...props}
     >
@@ -133,18 +143,18 @@ export function BrandButton({
   );
 }
 
-export function BrandCard({ 
-  children, 
+export function BrandCard({
+  children,
   className = '',
-  ...props 
-}: { 
+  ...props
+}: {
   children: ReactNode;
   className?: string;
 } & React.HTMLAttributes<HTMLDivElement>) {
   const { branding } = useBranding();
-  
+
   return (
-    <div 
+    <div
       className={`border rounded-lg p-6 ${className}`}
       style={{
         borderColor: branding.primaryColor,
@@ -156,20 +166,20 @@ export function BrandCard({
   );
 }
 
-export function BrandLink({ 
-  children, 
+export function BrandLink({
+  children,
   href,
   className = '',
-  ...props 
-}: { 
+  ...props
+}: {
   children: ReactNode;
   href: string;
   className?: string;
 } & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   const { branding } = useBranding();
-  
+
   return (
-    <a 
+    <a
       href={href}
       className={`brand-primary-text hover:underline ${className}`}
       style={{
