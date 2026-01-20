@@ -32,7 +32,13 @@ export class EnergyPredictionService {
   /**
    * Train prediction model for a device
    */
-  static async trainModel(deviceId: string, readings: DeviceReading[]): Promise<any> {
+  static async trainModel(deviceId: string, readings: DeviceReading[]): Promise<{
+    generationModel: SimpleLinearRegression;
+    consumptionModel: SimpleLinearRegression;
+    trainedAt: Date;
+    dataPoints: number;
+    accuracy: number;
+  }> {
     if (readings.length < this.MIN_DATA_POINTS) {
       throw new Error(`Insufficient data for training. Need at least ${this.MIN_DATA_POINTS} readings, got ${readings.length}`);
     }
@@ -60,7 +66,7 @@ export class EnergyPredictionService {
       d.isWeekend,
       d.temperature || 20, // Default temperature if missing
     ]);
-    
+
     const generationTargets = trainingData.map(d => d.generationKW);
     const generationModel = new SimpleLinearRegression(generationFeatures, generationTargets);
 
@@ -83,17 +89,17 @@ export class EnergyPredictionService {
   static async generatePredictions(
     deviceId: string,
     deviceName: string,
-    generationModel: any,
-    consumptionModel: any,
+    generationModel: SimpleLinearRegression,
+    consumptionModel: SimpleLinearRegression,
     lastReading?: DeviceReading
   ): Promise<PredictionResult> {
     const predictions = [];
     const now = new Date();
-    let lastTemp = lastReading?.temperature || 20;
+    const lastTemp = lastReading?.temperature || 20;
 
     for (let i = 1; i <= this.PREDICTION_HORIZON_HOURS; i++) {
       const futureTime = new Date(now.getTime() + i * 60 * 60 * 1000);
-      
+
       // Extract features for prediction
       const features = [
         futureTime.getHours(),
@@ -108,7 +114,7 @@ export class EnergyPredictionService {
       const consumptionPrediction = Math.max(0, consumptionModel.predict(features));
 
       // Calculate confidence based on time of day and data availability
-      const confidence = this.calculateConfidence(futureTime, generationModel, consumptionModel);
+      const confidence = this.calculateConfidence(futureTime);
 
       predictions.push({
         timestamp: futureTime,
@@ -131,8 +137,8 @@ export class EnergyPredictionService {
    * Calculate model accuracy using cross-validation
    */
   private static calculateModelAccuracy(
-    generationModel: any,
-    consumptionModel: any,
+    generationModel: SimpleLinearRegression,
+    consumptionModel: SimpleLinearRegression,
     trainingData: TrainingData[]
   ): number {
     if (trainingData.length === 0) return 0;
@@ -169,7 +175,7 @@ export class EnergyPredictionService {
     if (actual.length === 0) return 0;
 
     const actualMean = actual.reduce((sum, val) => sum + val, 0) / actual.length;
-    
+
     const totalSumSquares = actual.reduce((sum, val) => {
       return sum + Math.pow(val - actualMean, 2);
     }, 0);
@@ -179,7 +185,7 @@ export class EnergyPredictionService {
     }, 0);
 
     if (totalSumSquares === 0) return 1;
-    
+
     return Math.max(0, 1 - (residualSumSquares / totalSumSquares));
   }
 
@@ -187,9 +193,7 @@ export class EnergyPredictionService {
    * Calculate prediction confidence based on various factors
    */
   private static calculateConfidence(
-    timestamp: Date,
-    generationModel: any,
-    consumptionModel: any
+    timestamp: Date
   ): number {
     let confidence = 0.8; // Base confidence
 
@@ -231,9 +235,16 @@ export class EnergyPredictionService {
       anomalyRate: number;
     };
   } {
-    const anomalies = [];
+    const anomalies: Array<{
+      timestamp: Date;
+      type: 'SPIKE' | 'DROP' | 'FLATLINE' | 'OUTLIER';
+      severity: 'LOW' | 'MEDIUM' | 'HIGH';
+      description: string;
+      value: number;
+      expectedValue: number;
+    }> = [];
     const values = readings.map(r => r.generationKW || r.consumptionKW || 0);
-    
+
     if (values.length < 10) {
       return {
         anomalies: [],
@@ -275,7 +286,7 @@ export class EnergyPredictionService {
       if (index > 0) {
         const prevValue = values[index - 1];
         const changeRate = Math.abs((value - prevValue) / prevValue);
-        
+
         if (changeRate > 0.5) { // 50% change
           anomalies.push({
             timestamp,
@@ -304,7 +315,7 @@ export class EnergyPredictionService {
       if (index >= 5) {
         const recentValues = values.slice(index - 5, index);
         const isConstant = recentValues.every(val => Math.abs(val - value) < 0.01);
-        
+
         if (isConstant && value > 0) {
           anomalies.push({
             timestamp,
@@ -362,7 +373,7 @@ export class EnergyPredictionService {
 
     const avgEfficiency = values.reduce((sum, v) => sum + v.efficiency, 0) / values.length;
     const avgGeneration = values.reduce((sum, v) => sum + v.generation, 0) / values.length;
-    const avgConsumption = values.reduce((sum, v) => sum + v.consumption, 0) / values.length;
+    // const avgConsumption = values.reduce((sum, v) => sum + v.consumption, 0) / values.length;
 
     // Low efficiency recommendation
     if (avgEfficiency < 70) {
@@ -393,7 +404,7 @@ export class EnergyPredictionService {
       const batteryReadings = readings.filter(r => r.batteryPercent !== null);
       if (batteryReadings.length > 0) {
         const avgBatteryLevel = batteryReadings.reduce((sum, r) => sum + (r.batteryPercent || 0), 0) / batteryReadings.length;
-        
+
         if (avgBatteryLevel < 30) {
           recommendations.push({
             type: 'USAGE_PATTERN',
@@ -410,7 +421,7 @@ export class EnergyPredictionService {
     // Maintenance recommendations based on age
     if (device.installedAt) {
       const deviceAge = (Date.now() - device.installedAt.getTime()) / (1000 * 60 * 60 * 24 * 365);
-      
+
       if (deviceAge > 10) {
         recommendations.push({
           type: 'UPGRADE',
@@ -425,9 +436,16 @@ export class EnergyPredictionService {
 
     return {
       recommendations: recommendations.sort((a, b) => {
-        const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
-      }),
+        const priorityOrder: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+        return (priorityOrder[b.priority] || 1) - (priorityOrder[a.priority] || 1);
+      }) as {
+        type: 'OPTIMIZATION' | 'MAINTENANCE' | 'UPGRADE' | 'USAGE_PATTERN';
+        priority: 'LOW' | 'MEDIUM' | 'HIGH';
+        title: string;
+        description: string;
+        potentialSavings: number;
+        implementation: string;
+      }[],
       overallEfficiency: avgEfficiency,
     };
   }
