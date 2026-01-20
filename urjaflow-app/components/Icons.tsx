@@ -12,15 +12,22 @@ import {
   FileText,
   HelpCircle,
   User,
+  UserPlus,
+  Users,
+  Cpu,
+  Star,
+  Building2,
+  Target,
   Settings,
   LogOut,
   Menu,
   X,
   Bell,
   Check,
+  CheckCircle,
   AlertCircle,
-  Info,
   AlertTriangle,
+  Info,
   ChevronRight,
   ChevronDown,
   Search,
@@ -79,6 +86,8 @@ export const Icons = {
   
   // User & Account
   user: User,
+  userPlus: UserPlus,
+  users: Users,
   settings: Settings,
   logOut: LogOut,
   shield: Shield,
@@ -95,6 +104,7 @@ export const Icons = {
   // Notifications
   bell: Bell,
   check: Check,
+  checkCircle: CheckCircle,
   alertCircle: AlertCircle,
   alertTriangle: AlertTriangle,
   
@@ -111,6 +121,7 @@ export const Icons = {
   share: Share2,
   externalLink: ExternalLink,
   loader: Loader2,
+  cog: Settings,
   
   // Visibility
   eye: Eye,
@@ -124,6 +135,12 @@ export const Icons = {
   mapPin: MapPin,
   phone: Phone,
   mail: Mail,
+  
+  // Organization & Business
+  building2: Building2,
+  cpu: Cpu,
+  star: Star,
+  target: Target,
 };
 
 export type IconName = keyof typeof Icons;
