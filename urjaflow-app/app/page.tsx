@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { StatCard } from '@/components/StatCard';
 import { ChartBars } from '@/components/ChartBars';
@@ -8,12 +8,22 @@ import { Icon } from '@/components/Icons';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { Device } from '@/types';
 import useSWR from 'swr';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useWebSocket, DeviceReading } from '@/hooks/useWebSocket';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+interface DashboardData {
+  liveGeneration: number;
+  liveConsumption: number;
+  batteryLevel: number;
+  monthlySavings: number;
+  carbonSaved: number;
+  generationHistory: { date: string; generation: number }[];
+  devices: Device[];
+}
+
 export default function Dashboard() {
-  const { data: dashboardData, error, isLoading, mutate } = useSWR('/api/dashboard', fetcher, {
+  const { data: dashboardData, error, isLoading, mutate } = useSWR<{ success: boolean; data: DashboardData }>('/api/dashboard', fetcher, {
     refreshInterval: 10000, // Refresh every 10 seconds as fallback
   });
 
@@ -26,10 +36,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (lastMessage?.type === 'reading' && dashboardData?.data) {
       // Update live stats with new reading
-      const reading = lastMessage.data;
-      
+      const reading = lastMessage.data as DeviceReading;
+
       // Mutate the SWR cache with updated data
-      mutate((currentData: any) => {
+      mutate((currentData) => {
         if (!currentData?.data) return currentData;
 
         return {
@@ -84,7 +94,7 @@ export default function Dashboard() {
   const { liveGeneration, liveConsumption, batteryLevel, monthlySavings, carbonSaved, generationHistory, devices } = dashboardData.data;
 
   // Transform generation history for chart
-  const chartData = generationHistory.map((day: any) => ({
+  const chartData = generationHistory.map((day) => ({
     label: day.date,
     value: day.generation,
   }));
@@ -100,7 +110,7 @@ export default function Dashboard() {
               Monitor your energy production and consumption in real-time
             </p>
           </div>
-          
+
           {/* Connection Status */}
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
