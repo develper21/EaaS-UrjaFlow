@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
 
-      const where = context.user.role === 'SUPER_ADMIN' 
-        ? {} 
+      const where = context.user.role === 'SUPER_ADMIN'
+        ? {}
         : { id: context.user.organizationId };
 
       const [organizations, total] = await Promise.all([
@@ -47,10 +47,12 @@ export async function GET(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
@@ -58,9 +60,9 @@ export async function GET(request: NextRequest) {
 // POST /api/rest/organizations - Create organization
 export async function POST(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.UPDATE_ORGANIZATION)(async (req, context) => {
+    const result = await requirePermission(Permission.UPDATE_ORGANIZATION)(async (req) => {
       const body = await req.json();
-      
+
       // Validate input
       if (!body.name || !body.slug) {
         return NextResponse.json(
@@ -111,10 +113,12 @@ export async function POST(request: NextRequest) {
     })(request, {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = (error as { status?: number }).status || 500;
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: error.status || 500 }
+      { success: false, error: message },
+      { status }
     );
   }
 }
