@@ -1,9 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+interface Device {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  model: string | null;
+  serialNumber: string | null;
+  capacity: number | null;
+  location: string | null;
+  installedAt: Date | null;
+  userId: string | null;
+  organizationId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface DeviceReading {
+  id: string;
+  deviceId: string;
+  timestamp: Date;
+  generationKW: number | null;
+  consumptionKW: number | null;
+  batteryPercent: number | null;
+  temperature: number | null;
+  efficiency: number | null;
+}
+
+export async function GET() {
   try {
     // Get user session
     const session = await getServerSession(authOptions);
@@ -24,7 +51,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get latest readings for each device
-    const deviceIds = devices.map((d: any) => d.id);
+    const deviceIds = devices.map((d: Device) => d.id);
     const latestReadings = await prisma.deviceReading.findMany({
       where: {
         deviceId: { in: deviceIds },
@@ -38,24 +65,24 @@ export async function GET(request: NextRequest) {
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
     const recentReadings = latestReadings.filter(
-      (r: any) => new Date(r.timestamp) > last24h
+      (r: DeviceReading) => new Date(r.timestamp) > last24h
     );
 
     const liveGeneration = recentReadings
       .slice(0, 10)
-      .reduce((sum: number, r: any) => sum + (r.generationKW || 0), 0) / 10;
+      .reduce((sum: number, r: DeviceReading) => sum + (r.generationKW || 0), 0) / 10;
 
     const liveConsumption = recentReadings
       .slice(0, 10)
-      .reduce((sum: number, r: any) => sum + (r.consumptionKW || 0), 0) / 10;
+      .reduce((sum: number, r: DeviceReading) => sum + (r.consumptionKW || 0), 0) / 10;
 
-    const batteryReadings = recentReadings.filter((r: any) => r.batteryPercent !== null);
+    const batteryReadings = recentReadings.filter((r: DeviceReading) => r.batteryPercent !== null);
     const batteryLevel = batteryReadings.length > 0
-      ? batteryReadings.reduce((sum: number, r: any) => sum + (r.batteryPercent || 0), 0) / batteryReadings.length
+      ? batteryReadings.reduce((sum: number, r: DeviceReading) => sum + (r.batteryPercent || 0), 0) / batteryReadings.length
       : 0;
 
     // Calculate monthly savings (mock calculation)
-    const totalGeneration = recentReadings.reduce((sum: number, r: any) => sum + (r.generationKW || 0), 0);
+    const totalGeneration = recentReadings.reduce((sum: number, r: DeviceReading) => sum + (r.generationKW || 0), 0);
     const monthlySavings = totalGeneration * 0.13; // $0.13 per kWh
 
     // Calculate carbon saved
@@ -65,13 +92,13 @@ export async function GET(request: NextRequest) {
     const generationHistory = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dayReadings = latestReadings.filter((r: any) => {
+      const dayReadings = latestReadings.filter((r: DeviceReading) => {
         const rDate = new Date(r.timestamp);
         return rDate.toDateString() === date.toDateString();
       });
       
-      const dayGeneration = dayReadings.reduce((sum: number, r: any) => sum + (r.generationKW || 0), 0);
-      const dayConsumption = dayReadings.reduce((sum: number, r: any) => sum + (r.consumptionKW || 0), 0);
+      const dayGeneration = dayReadings.reduce((sum: number, r: DeviceReading) => sum + (r.generationKW || 0), 0);
+      const dayConsumption = dayReadings.reduce((sum: number, r: DeviceReading) => sum + (r.consumptionKW || 0), 0);
       
       generationHistory.push({
         date: date.toLocaleDateString('en-US', { weekday: 'short' }),
