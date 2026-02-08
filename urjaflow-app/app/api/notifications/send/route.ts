@@ -58,7 +58,7 @@ export async function POST() {
             const savings = (totalGenerated * 0.12).toFixed(2);
 
             const emailTemplate = generateNotificationEmail('energy', {
-              userName: user.name,
+              userName: user.name || 'User',
               generated: totalGenerated.toFixed(2),
               consumed: totalConsumed.toFixed(2),
               savings,
@@ -103,7 +103,7 @@ export async function POST() {
             const invoice = recentInvoices[0];
             const subscription = invoice.subscription;
             const emailTemplate = generateNotificationEmail('billing', {
-              userName: user.name,
+              userName: user.name || 'User',
               period: subscription ? `${new Date(subscription.currentPeriodStart).toLocaleDateString()} - ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : 'N/A',
               energyConsumed: 'N/A', // Would need to calculate from readings
               amount: invoice.amount.toFixed(2),
