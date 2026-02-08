@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 interface Device {
@@ -34,7 +34,7 @@ export async function GET() {
   try {
     // Get user session
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -63,7 +63,7 @@ export async function GET() {
     // Calculate aggregated stats
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
+
     const recentReadings = latestReadings.filter(
       (r: DeviceReading) => new Date(r.timestamp) > last24h
     );
@@ -88,6 +88,12 @@ export async function GET() {
     // Calculate carbon saved
     const carbonSaved = totalGeneration * 0.417; // kg CO2 per kWh
 
+    // Calculate efficiency
+    const efficiencyReadings = recentReadings.filter((r: DeviceReading) => r.efficiency !== null);
+    const avgEfficiency = efficiencyReadings.length > 0
+      ? efficiencyReadings.reduce((sum: number, r: DeviceReading) => sum + (r.efficiency || 0), 0) / efficiencyReadings.length
+      : 0;
+
     // Generation history (last 7 days)
     const generationHistory = [];
     for (let i = 6; i >= 0; i--) {
@@ -96,16 +102,35 @@ export async function GET() {
         const rDate = new Date(r.timestamp);
         return rDate.toDateString() === date.toDateString();
       });
-      
+
       const dayGeneration = dayReadings.reduce((sum: number, r: DeviceReading) => sum + (r.generationKW || 0), 0);
       const dayConsumption = dayReadings.reduce((sum: number, r: DeviceReading) => sum + (r.consumptionKW || 0), 0);
-      
+
       generationHistory.push({
         date: date.toLocaleDateString('en-US', { weekday: 'short' }),
         generation: parseFloat(dayGeneration.toFixed(2)),
         consumption: parseFloat(dayConsumption.toFixed(2)),
       });
     }
+
+    // Calculate trends
+    const last48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    const previousPeriodReadings = latestReadings.filter(
+      (r: DeviceReading) => new Date(r.timestamp) > last48h && new Date(r.timestamp) <= last24h
+    );
+
+    const prevLiveGeneration = previousPeriodReadings.length > 0
+      ? previousPeriodReadings.slice(0, 10).reduce((sum: number, r: DeviceReading) => sum + (r.generationKW || 0), 0) / 10
+      : 0;
+
+    const prevLiveConsumption = previousPeriodReadings.length > 0
+      ? previousPeriodReadings.slice(0, 10).reduce((sum: number, r: DeviceReading) => sum + (r.consumptionKW || 0), 0) / 10
+      : 0;
+
+    // Calculate trend percentages
+    const generationTrend = prevLiveGeneration > 0 ? ((liveGeneration - prevLiveGeneration) / prevLiveGeneration) * 100 : 0;
+    const consumptionTrend = prevLiveConsumption > 0 ? ((liveConsumption - prevLiveConsumption) / prevLiveConsumption) * 100 : 0;
+    const savingsTrend = generationTrend; // Assuming savings track generation directly
 
     return NextResponse.json({
       success: true,
@@ -115,6 +140,12 @@ export async function GET() {
         batteryLevel: parseFloat(batteryLevel.toFixed(1)),
         monthlySavings: parseFloat(monthlySavings.toFixed(2)),
         carbonSaved: parseFloat(carbonSaved.toFixed(1)),
+        efficiency: parseFloat(avgEfficiency.toFixed(1)),
+        trends: {
+          generation: parseFloat(generationTrend.toFixed(1)),
+          consumption: parseFloat(consumptionTrend.toFixed(1)),
+          savings: parseFloat(savingsTrend.toFixed(1))
+        },
         generationHistory,
         devices,
       },
