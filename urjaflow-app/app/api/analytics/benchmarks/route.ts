@@ -18,9 +18,16 @@ export async function GET(request: NextRequest) {
   try {
     const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req, context) => {
       const { searchParams } = new URL(req.url);
-      const organizationId = searchParams.get('organizationId') || context.user.organizationId;
+      const organizationId = searchParams.get('organizationId') || context?.user?.organizationId;
       const deviceId = searchParams.get('deviceId');
       const period = parseInt(searchParams.get('period') || '30'); // days
+
+      if (!organizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Organization ID is required' },
+          { status: 400 }
+        );
+      }
 
       // Get organization data
       const organization = await prisma.organization.findUnique({
@@ -35,8 +42,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' && 
-          organization.id !== context.user.organizationId) {
+      if (context?.user?.role !== 'SUPER_ADMIN' &&
+        organization.id !== context?.user?.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
@@ -109,38 +116,38 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// GET /api/analytics/benchmarks/industry - Get industry benchmarks only
-export async function INDUSTRY(request: NextRequest) {
-  try {
-    const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req) => {
-      const { searchParams } = new URL(req.url);
-      const category = searchParams.get('category');
-
-      let benchmarks = BenchmarkService.getAllBenchmarks();
-      
-      if (category) {
-        benchmarks = BenchmarkService.getBenchmarksByCategory(category.toUpperCase());
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          benchmarks,
-          categories: [...new Set(benchmarks.map(b => b.category))],
-          lastUpdated: new Date()
-        }
-      });
-    })(request, {});
-
-    return result;
-  } catch (error: unknown) {
-    const apiError = error as ApiError;
-    return NextResponse.json(
-      { success: false, error: apiError.message },
-      { status: apiError.status || 500 }
-    );
-  }
-}
+// // GET /api/analytics/benchmarks/industry - Get industry benchmarks only
+// // export async function INDUSTRY(request: NextRequest) {
+//   try {
+//     const result = await requirePermission(Permission.VIEW_COMPARATIVE_ANALYTICS)(async (req) => {
+//       const { searchParams } = new URL(req.url);
+//       const category = searchParams.get('category');
+// 
+//       let benchmarks = BenchmarkService.getAllBenchmarks();
+//       
+//       if (category) {
+//         benchmarks = BenchmarkService.getBenchmarksByCategory(category.toUpperCase());
+//       }
+// 
+//       return NextResponse.json({
+//         success: true,
+//         data: {
+//           benchmarks,
+//           categories: [...new Set(benchmarks.map(b => b.category))],
+//           lastUpdated: new Date()
+//         }
+//       });
+//     })(request, {});
+// 
+//     return result;
+//   } catch (error: unknown) {
+//     const apiError = error as ApiError;
+//     return NextResponse.json(
+//       { success: false, error: apiError.message },
+//       { status: apiError.status || 500 }
+//     );
+//   }
+// }
 
 // POST /api/analytics/benchmarks/compare - Compare with peer organizations
 export async function POST(request: NextRequest) {
@@ -173,7 +180,7 @@ export async function POST(request: NextRequest) {
       const comparisons = await Promise.all(
         organizations.map(async org => {
           const allReadings = org.devices.flatMap(d => d.readings);
-          
+
           const industryReport = await BenchmarkService.generateIndustryReport(
             org,
             org.devices,
