@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
+import { Layout } from '@/components/Layout';
 
 interface ReportTemplate {
   id: string;
@@ -162,7 +163,8 @@ export default function ReportsPage() {
   const reportTemplates = templates.length > 0 ? templates : defaultTemplates;
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -541,6 +543,7 @@ export default function ReportsPage() {
           </div>
         </Modal>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }
