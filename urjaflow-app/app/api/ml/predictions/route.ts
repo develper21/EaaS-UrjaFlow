@@ -10,7 +10,14 @@ export async function GET(request: NextRequest) {
     const result = await requirePermission(Permission.VIEW_ANALYTICS)(async (req, context) => {
       const { searchParams } = new URL(req.url);
       const deviceId = searchParams.get('deviceId');
-      const organizationId = searchParams.get('organizationId') || context.user.organizationId;
+      const organizationId = searchParams.get('organizationId') || context?.user?.organizationId;
+
+      if (!organizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Organization ID is required' },
+          { status: 400 }
+        );
+      }
 
       // Get devices to predict for
       const where: import('@prisma/client').Prisma.DeviceWhereInput = {};
@@ -124,8 +131,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' &&
-        device.organizationId !== context.user.organizationId) {
+      if (context?.user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== context?.user?.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
