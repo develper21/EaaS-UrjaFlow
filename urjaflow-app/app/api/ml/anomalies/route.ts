@@ -10,8 +10,15 @@ export async function GET(request: NextRequest) {
     const result = await requirePermission(Permission.VIEW_ANALYTICS)(async (req, context) => {
       const { searchParams } = new URL(req.url);
       const deviceId = searchParams.get('deviceId');
-      const organizationId = searchParams.get('organizationId') || context.user.organizationId;
+      const organizationId = searchParams.get('organizationId') || context?.user?.organizationId;
       const hours = parseInt(searchParams.get('hours') || '24'); // Default to last 24 hours
+
+      if (!organizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Organization ID is required' },
+          { status: 400 }
+        );
+      }
 
       // Get devices to analyze
       const where: import('@prisma/client').Prisma.DeviceWhereInput = {};
@@ -141,8 +148,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (context.user.role !== 'SUPER_ADMIN' &&
-        device.organizationId !== context.user.organizationId) {
+      if (context?.user?.role !== 'SUPER_ADMIN' &&
+        device.organizationId !== context?.user?.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
@@ -169,7 +176,7 @@ export async function POST(request: NextRequest) {
           deviceId,
           rules: configuredRules,
           configuredAt: new Date(),
-          configuredBy: context.user.email
+          configuredBy: context?.user?.email
         }
       });
     })(request, {});
