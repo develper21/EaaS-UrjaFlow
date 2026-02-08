@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   description: "Monitor and manage your renewable energy systems with real-time analytics and insights",
   keywords: ["energy", "solar", "renewable", "monitoring", "IoT"],
   manifest: "/manifest.json",
-  themeColor: "#10b981",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -33,6 +32,10 @@ export const metadata: Metadata = {
     title: "UrjaFlow - Energy Management Platform",
     description: "Monitor and manage your renewable energy systems with real-time analytics",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#10b981",
 };
 
 export default function RootLayout({
