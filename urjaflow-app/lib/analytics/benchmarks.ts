@@ -95,7 +95,7 @@ export class BenchmarkService {
       poor: 65,
       description: 'Actual performance vs expected performance'
     },
-    
+
     // Battery Storage Benchmarks
     {
       category: 'BATTERY',
@@ -127,7 +127,7 @@ export class BenchmarkService {
       poor: 90,
       description: 'Battery system availability'
     },
-    
+
     // Wind Turbine Benchmarks
     {
       category: 'WIND_TURBINE',
@@ -149,7 +149,7 @@ export class BenchmarkService {
       poor: 85,
       description: 'Turbine operational availability'
     },
-    
+
     // Inverter Benchmarks
     {
       category: 'INVERTER',
@@ -171,7 +171,7 @@ export class BenchmarkService {
       poor: 10,
       description: 'Total harmonic distortion (lower is better)'
     },
-    
+
     // Overall System Benchmarks
     {
       category: 'SYSTEM',
@@ -219,7 +219,7 @@ export class BenchmarkService {
    */
   static calculatePercentile(value: number, benchmark: IndustryBenchmark): number {
     const { excellent, good, average, poor } = benchmark;
-    
+
     if (value >= excellent) return 95;
     if (value >= good) return 80;
     if (value >= average) return 50;
@@ -232,7 +232,7 @@ export class BenchmarkService {
    */
   static getRating(value: number, benchmark: IndustryBenchmark): 'EXCELLENT' | 'GOOD' | 'AVERAGE' | 'POOR' {
     const percentile = this.calculatePercentile(value, benchmark);
-    
+
     if (percentile >= 90) return 'EXCELLENT';
     if (percentile >= 70) return 'GOOD';
     if (percentile >= 30) return 'AVERAGE';
@@ -256,11 +256,11 @@ export class BenchmarkService {
     const uptime = this.calculateUptime(readings);
 
     // Get benchmarks
-    const efficiencyBenchmark = this.getBenchmark(device.type, 'efficiency') || 
+    const efficiencyBenchmark = this.getBenchmark(device.type, 'efficiency') ||
       this.getBenchmark('SYSTEM', 'overall_efficiency')!;
-    const generationBenchmark = this.getBenchmark(device.type, 'capacity_factor') || 
+    const generationBenchmark = this.getBenchmark(device.type, 'capacity_factor') ||
       this.getBenchmark(device.type, 'performance_ratio')!;
-    const uptimeBenchmark = this.getBenchmark(device.type, 'availability') || 
+    const uptimeBenchmark = this.getBenchmark(device.type, 'availability') ||
       this.getBenchmark('SYSTEM', 'uptime')!;
 
     return {
@@ -307,21 +307,21 @@ export class BenchmarkService {
     );
 
     // Calculate overall metrics
-    const avgEfficiency = deviceAnalyses.reduce((sum, analysis) => 
+    const avgEfficiency = deviceAnalyses.reduce((sum, analysis) =>
       sum + analysis.metrics.efficiency.current, 0) / deviceAnalyses.length;
-    const avgGeneration = deviceAnalyses.reduce((sum, analysis) => 
+    const avgGeneration = deviceAnalyses.reduce((sum, analysis) =>
       sum + analysis.metrics.generation.current, 0) / deviceAnalyses.length;
-    const avgUptime = deviceAnalyses.reduce((sum, analysis) => 
+    const avgUptime = deviceAnalyses.reduce((sum, analysis) =>
       sum + analysis.metrics.uptime.current, 0) / deviceAnalyses.length;
 
     // Calculate industry rankings
-    const efficiencyRanking = this.calculatePercentile(avgEfficiency, 
+    const efficiencyRanking = this.calculatePercentile(avgEfficiency,
       this.getBenchmark('SYSTEM', 'overall_efficiency')!);
-    const generationRanking = this.calculatePercentile(avgGeneration, 
+    const generationRanking = this.calculatePercentile(avgGeneration,
       this.getBenchmark('SYSTEM', 'overall_efficiency')!);
-    const reliabilityRanking = this.calculatePercentile(avgUptime, 
+    const reliabilityRanking = this.calculatePercentile(avgUptime,
       this.getBenchmark('SYSTEM', 'uptime')!);
-    const costEffectivenessRanking = this.calculatePercentile(0.12, 
+    const costEffectivenessRanking = this.calculatePercentile(0.12,
       this.getBenchmark('SYSTEM', 'cost_per_kwh')!); // Assuming $0.12/kWh
 
     // Generate recommendations
@@ -356,7 +356,7 @@ export class BenchmarkService {
   private static calculateEfficiency(readings: DeviceReading[]): number {
     const validReadings = readings.filter(r => r.efficiency !== null && r.efficiency !== undefined);
     if (validReadings.length === 0) return 0;
-    
+
     return validReadings.reduce((sum, r) => sum + (r.efficiency || 0), 0) / validReadings.length;
   }
 
@@ -366,11 +366,11 @@ export class BenchmarkService {
   private static calculateGeneration(readings: DeviceReading[]): number {
     const validReadings = readings.filter(r => r.generationKW !== null && r.generationKW !== undefined);
     if (validReadings.length === 0) return 0;
-    
+
     // Calculate capacity factor (actual vs potential)
     const maxGeneration = Math.max(...validReadings.map(r => r.generationKW || 0));
     const avgGeneration = validReadings.reduce((sum, r) => sum + (r.generationKW || 0), 0) / validReadings.length;
-    
+
     return maxGeneration > 0 ? (avgGeneration / maxGeneration) * 100 : 0;
   }
 
@@ -379,13 +379,13 @@ export class BenchmarkService {
    */
   private static calculateUptime(readings: DeviceReading[]): number {
     if (readings.length === 0) return 0;
-    
+
     // Count readings with non-zero values (indicating active operation)
-    const activeReadings = readings.filter(r => 
-      (r.generationKW && r.generationKW > 0) || 
+    const activeReadings = readings.filter(r =>
+      (r.generationKW && r.generationKW > 0) ||
       (r.consumptionKW && r.consumptionKW > 0)
     );
-    
+
     return (activeReadings.length / readings.length) * 100;
   }
 
@@ -399,10 +399,16 @@ export class BenchmarkService {
     description: string;
     potentialImprovement: number;
   }> {
-    const recommendations = [];
+    const recommendations: Array<{
+      category: string;
+      priority: 'HIGH' | 'MEDIUM' | 'LOW';
+      title: string;
+      description: string;
+      potentialImprovement: number;
+    }> = [];
 
     // Analyze efficiency issues
-    const poorEfficiencyDevices = analyses.filter(a => 
+    const poorEfficiencyDevices = analyses.filter(a =>
       a.metrics.efficiency.rating === 'POOR' || a.metrics.efficiency.rating === 'AVERAGE'
     );
 
@@ -417,7 +423,7 @@ export class BenchmarkService {
     }
 
     // Analyze generation issues
-    const poorGenerationDevices = analyses.filter(a => 
+    const poorGenerationDevices = analyses.filter(a =>
       a.metrics.generation.rating === 'POOR' || a.metrics.generation.rating === 'AVERAGE'
     );
 
@@ -432,7 +438,7 @@ export class BenchmarkService {
     }
 
     // Analyze reliability issues
-    const poorReliabilityDevices = analyses.filter(a => 
+    const poorReliabilityDevices = analyses.filter(a =>
       a.metrics.uptime.rating === 'POOR' || a.metrics.uptime.rating === 'AVERAGE'
     );
 
