@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Icons } from '@/components/Icons';
+import { Layout } from '@/components/Layout';
+import { RoleGuard } from '@/components/RoleGuard';
 export const dynamic = 'force-dynamic';
 
 interface DashboardStats {
@@ -40,89 +42,84 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Icons.zap size={48} className="animate-pulse text-green-600" />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <Icons.zap size={48} className="animate-pulse text-green-600" />
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Users */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Icons.user size={24} className="text-blue-600" />
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="mt-2 text-gray-600">System administration and overview</p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center">
+              <Icons.users className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center">
+              <Icons.cpu className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Devices</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalDevices}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center">
+              <Icons.dollarSign className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center">
+              <Icons.star className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeSubscriptions}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Total Devices */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Icons.settings size={24} className="text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Devices</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalDevices}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Total Revenue */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Icons.dollarSign size={24} className="text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toFixed(2)}</p>
+        <RoleGuard roles={['SUPER_ADMIN']}>
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50">
+                <Icons.users className="h-5 w-5 mr-2" />
+                Manage Users
+              </button>
+              <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50">
+                <Icons.settings className="h-5 w-5 mr-2" />
+                System Settings
+              </button>
+              <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50">
+                <Icons.download className="h-5 w-5 mr-2" />
+                Export Data
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Active Subscriptions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Icons.check size={24} className="text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeSubscriptions}</p>
-            </div>
-          </div>
-        </div>
+        </RoleGuard>
       </div>
-
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <p className="text-sm text-gray-600">New user registered</p>
-            <span className="text-xs text-gray-400">2 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <p className="text-sm text-gray-600">Device added to system</p>
-            <span className="text-xs text-gray-400">4 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <p className="text-sm text-gray-600">Invoice generated</p>
-            <span className="text-xs text-gray-400">6 hours ago</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Layout>
   );
 }
