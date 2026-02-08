@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const result = await requirePermission(Permission.EXPORT_DATA)(async (req, context) => {
-      if (!context.user) {
+      if (!context?.user) {
         return NextResponse.json(
           { success: false, error: 'Unauthorized' },
           { status: 401 }
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
       const { searchParams } = new URL(req.url);
       const format = searchParams.get('format') || 'json';
-      const organizationId = searchParams.get('organizationId') || context.user.organizationId;
+      const organizationId = searchParams.get('organizationId') || context?.user?.organizationId;
       const deviceId = searchParams.get('deviceId');
       const dataType = searchParams.get('type') || 'readings';
       const startDate = searchParams.get('startDate');
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
       const end = endDate ? new Date(endDate) : new Date();
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' &&
-        organizationId !== context.user.organizationId) {
+      if (context?.user?.role !== 'SUPER_ADMIN' &&
+        organizationId !== context?.user?.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
