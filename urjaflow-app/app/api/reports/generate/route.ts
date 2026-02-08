@@ -19,9 +19,18 @@ export async function POST(request: NextRequest) {
         sections = ['summary', 'devices', 'readings']
       } = body;
 
+      const targetOrganizationId = organizationId || context?.user?.organizationId;
+
+      if (!targetOrganizationId) {
+        return NextResponse.json(
+          { success: false, error: 'Organization ID is required' },
+          { status: 400 }
+        );
+      }
+
       // Get organization
       const organization = await prisma.organization.findUnique({
-        where: { id: organizationId || context.user.organizationId }
+        where: { id: targetOrganizationId }
       });
 
       if (!organization) {
@@ -32,8 +41,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check access
-      if (context.user.role !== 'SUPER_ADMIN' &&
-        organization.id !== context.user.organizationId) {
+      if (context?.user?.role !== 'SUPER_ADMIN' &&
+        organization.id !== context?.user?.organizationId) {
         return NextResponse.json(
           { success: false, error: 'Access denied' },
           { status: 403 }
