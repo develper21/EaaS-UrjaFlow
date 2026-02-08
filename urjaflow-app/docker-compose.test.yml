@@ -1,0 +1,54 @@
+# Docker Compose for CI/CD Testing
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: urjaflow_test
+      POSTGRES_USER: urjaflow
+      POSTGRES_PASSWORD: urjaflow123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urjaflow -d urjaflow_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://urjaflow:urjaflow123@postgres:5432/urjaflow_test
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=test_secret_key_for_ci_cd
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./.env.test:/app/.env.test
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.40.0
+    environment:
+      - BASE_URL=http://app:3000
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./playwright-report:/app/playwright-report
+
+volumes:
+  postgres_data:
