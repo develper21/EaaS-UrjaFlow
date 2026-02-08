@@ -18,6 +18,12 @@ interface DashboardData {
   batteryLevel: number;
   monthlySavings: number;
   carbonSaved: number;
+  efficiency: number;
+  trends: {
+    generation: number;
+    consumption: number;
+    savings: number;
+  };
   generationHistory: { date: string; generation: number }[];
   devices: Device[];
 }
@@ -91,7 +97,7 @@ export default function Dashboard() {
     </Layout>
   );
 
-  const { liveGeneration, liveConsumption, batteryLevel, monthlySavings, carbonSaved, generationHistory, devices } = dashboardData.data;
+  const { liveGeneration, liveConsumption, batteryLevel, monthlySavings, carbonSaved, efficiency, trends, generationHistory, devices } = dashboardData.data;
 
   // Transform generation history for chart
   const chartData = generationHistory.map((day) => ({
@@ -128,7 +134,7 @@ export default function Dashboard() {
             unit="kW"
             icon="sun"
             iconColor="text-yellow-600"
-            trend={{ value: 12.5, isPositive: true }}
+            trend={{ value: Math.abs(trends.generation), isPositive: trends.generation >= 0 }}
           />
           <StatCard
             title="Live Consumption"
@@ -136,7 +142,8 @@ export default function Dashboard() {
             unit="kW"
             icon="zap"
             iconColor="text-blue-600"
-            trend={{ value: 5.2, isPositive: false }}
+            trend={{ value: Math.abs(trends.consumption), isPositive: trends.consumption >= 0 }}
+            inverse={true}
           />
           <StatCard
             title="Battery Level"
@@ -150,7 +157,7 @@ export default function Dashboard() {
             value={formatCurrency(monthlySavings)}
             icon="dollarSign"
             iconColor="text-emerald-600"
-            trend={{ value: 8.3, isPositive: true }}
+            trend={{ value: Math.abs(trends.savings), isPositive: trends.savings >= 0 }}
           />
         </div>
 
@@ -178,7 +185,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Efficiency</p>
-                <h3 className="text-2xl font-bold text-gray-900">92.5%</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{formatNumber(efficiency, 1)}%</h3>
                 <p className="text-sm text-gray-500">System performance</p>
               </div>
             </div>
