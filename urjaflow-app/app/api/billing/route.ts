@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 interface Invoice {
@@ -36,7 +36,7 @@ interface ParsedInvoice {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -48,7 +48,7 @@ export async function GET() {
 
     // Get current subscription
     const currentSubscription = await prisma.subscription.findFirst({
-      where: { 
+      where: {
         userId,
         status: 'ACTIVE',
       },
@@ -67,16 +67,11 @@ export async function GET() {
     // Find next pending invoice
     const nextInvoice = invoices.find(inv => inv.status === 'PENDING');
 
-    // Mock payment methods (in real app, integrate with Stripe)
-    const paymentMethods = [
-      {
-        id: 'pm_mock',
-        type: 'Visa',
-        last4: '4242',
-        expMonth: 12,
-        expYear: 2025,
-      },
-    ];
+    // Get payment methods from database
+    const paymentMethods = await prisma.paymentMethod.findMany({
+      where: { userId },
+      orderBy: { isDefault: 'desc' },
+    });
 
     // Parse metadata JSON
     const parsedInvoices = invoices.map((invoice: Invoice) => ({
