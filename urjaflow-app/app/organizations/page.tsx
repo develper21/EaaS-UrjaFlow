@@ -5,6 +5,9 @@ import { useSession } from 'next-auth/react';
 import { Icons, Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 import { StatCard } from '@/components/StatCard';
+import { Layout } from '@/components/Layout';
+import { RoleGuard, ConditionalRender } from '@/components/RoleGuard';
+import { useRole } from '@/hooks/useRole';
 
 interface Organization {
   id: string;
@@ -39,6 +42,7 @@ interface User {
 
 export default function OrganizationsPage() {
   const { data: session } = useSession();
+  const { isAdmin, canAccess } = useRole();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -84,38 +88,43 @@ export default function OrganizationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Icons.zap size={48} className="animate-pulse text-green-600" />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <Icons.zap size={48} className="animate-pulse text-green-600" />
+        </div>
+      </Layout>
     );
   }
 
   if (!selectedOrg) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
-          <p className="mt-2 text-gray-600">Manage your organizations and teams</p>
-        </div>
+      <Layout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
+            <p className="mt-2 text-gray-600">Manage your organizations and teams</p>
+          </div>
 
-        <div className="text-center py-12">
-          <Icon name="building2" size={64} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Organizations Found</h3>
-          <p className="text-gray-600 mb-6">Get started by creating your first organization</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-          >
-            <Icon name="plus" className="w-4 h-4 mr-2" />
-            Create Organization
-          </button>
+          <div className="text-center py-12">
+            <Icon name="building2" size={64} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Organizations Found</h3>
+            <p className="text-gray-600 mb-6">Get started by creating your first organization</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            >
+              <Icon name="plus" className="w-4 h-4 mr-2" />
+              Create Organization
+            </button>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -142,13 +151,15 @@ export default function OrganizationsPage() {
             ))}
           </select>
 
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-          >
-            <Icon name="plus" className="w-4 h-4 mr-2" />
-            New Organization
-          </button>
+          <ConditionalRender feature="organizations">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            >
+              <Icon name="plus" className="w-4 h-4 mr-2" />
+              New Organization
+            </button>
+          </ConditionalRender>
         </div>
       </div>
 
@@ -253,12 +264,14 @@ export default function OrganizationsPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
-            <button
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-            >
-              <Icon name="userPlus" className="w-4 h-4 mr-2" />
-              Invite User
-            </button>
+            <ConditionalRender feature="users">
+              <button
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+              >
+                <Icon name="userPlus" className="w-4 h-4 mr-2" />
+                Invite User
+              </button>
+            </ConditionalRender>
           </div>
 
           <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -315,13 +328,15 @@ export default function OrganizationsPage() {
                       {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-green-600 hover:text-green-900 mr-3">
-                        Edit
-                      </button>
-                      <button className="text-red-600 hover:text-red-900">
-                        Remove
-                      </button>
-                    </td>
+            <ConditionalRender feature="users">
+              <button className="text-green-600 hover:text-green-900 mr-3">
+                Edit
+              </button>
+              <button className="text-red-600 hover:text-red-900">
+                Remove
+              </button>
+            </ConditionalRender>
+          </td>
                   </tr>
                 ))}
               </tbody>
@@ -335,52 +350,54 @@ export default function OrganizationsPage() {
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Organization Settings</h3>
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Organization Name</label>
-                <input
-                  type="text"
-                  defaultValue={selectedOrg.name}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Domain</label>
-                <input
-                  type="text"
-                  defaultValue={selectedOrg.domain || ''}
-                  placeholder="your-domain.com"
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <ConditionalRender feature="organizations">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Primary Color</label>
+                  <label className="block text-sm font-medium text-gray-700">Organization Name</label>
                   <input
-                    type="color"
-                    defaultValue={selectedOrg.primaryColor}
-                    className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    type="text"
+                    defaultValue={selectedOrg.name}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Secondary Color</label>
+                  <label className="block text-sm font-medium text-gray-700">Domain</label>
                   <input
-                    type="color"
-                    defaultValue={selectedOrg.secondaryColor}
-                    className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    type="text"
+                    defaultValue={selectedOrg.domain || ''}
+                    placeholder="your-domain.com"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
-              </div>
 
-              <div className="pt-4">
-                <button
-                  type="button"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                >
-                  Save Changes
-                </button>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Primary Color</label>
+                    <input
+                      type="color"
+                      defaultValue={selectedOrg.primaryColor}
+                      className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Secondary Color</label>
+                    <input
+                      type="color"
+                      defaultValue={selectedOrg.secondaryColor}
+                      className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </ConditionalRender>
             </div>
           </div>
         </div>
@@ -428,6 +445,7 @@ export default function OrganizationsPage() {
           </div>
         </Modal>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }
