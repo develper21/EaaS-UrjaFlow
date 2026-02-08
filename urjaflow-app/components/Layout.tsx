@@ -13,16 +13,43 @@ interface NavItem {
   icon: IconName;
 }
 
-const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/', icon: 'home' },
-  { name: 'Organizations', href: '/organizations', icon: 'building2' },
-  { name: 'Analytics', href: '/analytics', icon: 'barChart' },
-  { name: 'Reports', href: '/reports', icon: 'fileText' },
-  { name: 'Plans', href: '/plans', icon: 'zap' },
-  { name: 'Billing', href: '/billing', icon: 'creditCard' },
-  { name: 'Support', href: '/support', icon: 'helpCircle' },
-  { name: 'Account', href: '/account', icon: 'user' },
-];
+const getNavigationByRole = (role: string): NavItem[] => {
+  const baseNavigation: NavItem[] = [
+    { name: 'Dashboard', href: '/', icon: 'home' },
+    { name: 'Account', href: '/account', icon: 'user' },
+  ];
+
+  const roleBasedNavigation = {
+    SUPER_ADMIN: [
+      { name: 'Organizations', href: '/organizations', icon: 'building2' },
+      { name: 'Analytics', href: '/analytics', icon: 'barChart' },
+      { name: 'Reports', href: '/reports', icon: 'fileText' },
+      { name: 'Plans', href: '/plans', icon: 'zap' },
+      { name: 'Billing', href: '/billing', icon: 'creditCard' },
+      { name: 'Support', href: '/support', icon: 'helpCircle' },
+      { name: 'Admin', href: '/admin', icon: 'settings' },
+    ],
+    ORG_ADMIN: [
+      { name: 'Organizations', href: '/organizations', icon: 'building2' },
+      { name: 'Analytics', href: '/analytics', icon: 'barChart' },
+      { name: 'Reports', href: '/reports', icon: 'fileText' },
+      { name: 'Plans', href: '/plans', icon: 'zap' },
+      { name: 'Billing', href: '/billing', icon: 'creditCard' },
+      { name: 'Support', href: '/support', icon: 'helpCircle' },
+    ],
+    MANAGER: [
+      { name: 'Analytics', href: '/analytics', icon: 'barChart' },
+      { name: 'Reports', href: '/reports', icon: 'fileText' },
+      { name: 'Support', href: '/support', icon: 'helpCircle' },
+    ],
+    VIEWER: [
+      { name: 'Analytics', href: '/analytics', icon: 'barChart' },
+      { name: 'Reports', href: '/reports', icon: 'fileText' },
+    ],
+  } as const;
+
+  return [...baseNavigation, ...(roleBasedNavigation[role as keyof typeof roleBasedNavigation] || [])];
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,6 +59,8 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  
+  const navigation = getNavigationByRole(session?.user?.role || 'VIEWER');
 
   if (status === 'loading') {
     return (
@@ -74,7 +103,7 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
-            {navigation.map((item) => {
+            {navigation.map((item: NavItem) => {
               const isActive = pathname === item.href;
               return (
                 <Link
