@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import stripe from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user session
-    const authSession = await getServerSession();
-    
+    const authSession = await getServerSession(authOptions);
+
     if (!authSession || !authSession.user?.email) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Please sign in' },
