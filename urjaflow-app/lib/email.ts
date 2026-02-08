@@ -37,13 +37,13 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
 interface EmailNotificationData {
   userName: string;
   period?: string;
-  energyConsumed?: number;
-  amount?: number;
+  energyConsumed?: number | string;
+  amount?: number | string;
   dueDate?: string;
-  generated?: number;
-  consumed?: number;
-  savings?: number;
-  efficiency?: number;
+  generated?: number | string;
+  consumed?: number | string;
+  savings?: number | string;
+  efficiency?: number | string;
   message?: string;
 }
 
