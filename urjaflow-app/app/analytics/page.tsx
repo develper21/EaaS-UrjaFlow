@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { Icon, IconName } from '@/components/Icons';
 import { StatCard } from '@/components/StatCard';
 import { ChartBars } from '@/components/ChartBars';
+import { Layout } from '@/components/Layout';
 
 interface PredictionData {
   deviceId: string;
@@ -92,14 +93,17 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Icon name="zap" size={48} className="animate-pulse text-green-600" />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="zap" size={48} className="animate-pulse text-green-600" />
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
@@ -384,6 +388,7 @@ export default function AnalyticsPage() {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }
