@@ -13,6 +13,7 @@ interface StatCardProps {
   };
   className?: string;
   iconColor?: string;
+  inverse?: boolean;
 }
 
 export function StatCard({
@@ -23,6 +24,7 @@ export function StatCard({
   trend,
   className,
   iconColor = 'text-green-600',
+  inverse = false,
 }: StatCardProps) {
   return (
     <div
@@ -41,22 +43,22 @@ export function StatCard({
           {trend && (
             <div className="mt-2 flex items-center gap-1">
               <Icon
-                name={trend.isPositive ? 'trendingUp' : 'trendingUp'}
+                name="trendingUp"
                 size={16}
                 className={cn(
-                  trend.isPositive ? 'text-green-600' : 'text-red-600',
+                  (inverse ? !trend.isPositive : trend.isPositive) ? 'text-green-600' : 'text-red-600',
                   !trend.isPositive && 'rotate-180'
                 )}
               />
               <span
                 className={cn(
                   'text-sm font-medium',
-                  trend.isPositive ? 'text-green-600' : 'text-red-600'
+                  (inverse ? !trend.isPositive : trend.isPositive) ? 'text-green-600' : 'text-red-600'
                 )}
               >
                 {Math.abs(trend.value)}%
               </span>
-              <span className="text-sm text-gray-500">vs last month</span>
+              <span className="text-sm text-gray-500">vs last period</span>
             </div>
           )}
         </div>
