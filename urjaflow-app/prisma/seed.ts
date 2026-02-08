@@ -1,12 +1,37 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { logger, dbLogger } from '../lib/logger';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  logger.section('🌱 UrjaFlow Database Seeding');
+  
+  logger.info('Starting database seeding process...');
 
   // Clean existing data (optional - comment out if you want to preserve data)
+  logger.subsection('Cleaning existing data');
+  
+  const cleanupTasks = [
+    'device readings',
+    'devices', 
+    'invoices',
+    'support tickets',
+    'subscriptions',
+    'organization subscriptions',
+    'plans',
+    'FAQs',
+    'notifications',
+    'sessions',
+    'accounts',
+    'users',
+    'organizations'
+  ];
+
+  cleanupTasks.forEach((task, index) => {
+    logger.progress(index + 1, cleanupTasks.length, `Cleaning ${task}`);
+  });
+
   await prisma.deviceReading.deleteMany();
   await prisma.device.deleteMany();
   await prisma.invoice.deleteMany();
@@ -21,9 +46,10 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.organization.deleteMany();
 
-  console.log('✅ Cleaned existing data');
+  logger.success('Database cleaned successfully');
 
-  // Create demo organizations
+  logger.subsection('Creating organizations');
+
   const demoOrg = await prisma.organization.create({
     data: {
       name: 'Demo Energy Corp',
@@ -40,6 +66,7 @@ async function main() {
       }),
     },
   });
+  dbLogger.success('Created Demo Energy Corp');
 
   const techOrg = await prisma.organization.create({
     data: {
@@ -57,11 +84,14 @@ async function main() {
       }),
     },
   });
+  dbLogger.success('Created Tech Solutions Ltd');
 
-  console.log('✅ Created organizations');
+  logger.success('Organizations created successfully');
 
+  logger.subsection('Creating users');
+  
   // Create demo users
-  const hashedPassword = await bcrypt.hash('demo123', 10);
+  const hashedPassword = await bcrypt.hash('password123', 12);
 
   const demoUser = await prisma.user.create({
     data: {
@@ -73,6 +103,7 @@ async function main() {
       organizationId: demoOrg.id,
     },
   });
+  dbLogger.success('Created Demo User (VIEWER)');
 
   await prisma.user.create({
     data: {
@@ -83,6 +114,7 @@ async function main() {
       emailVerified: new Date(),
     },
   });
+  dbLogger.success('Created Admin User (SUPER_ADMIN)');
 
   await prisma.user.create({
     data: {
@@ -94,6 +126,7 @@ async function main() {
       organizationId: techOrg.id,
     },
   });
+  dbLogger.success('Created Org Admin (ORG_ADMIN)');
 
   await prisma.user.create({
     data: {
@@ -105,8 +138,9 @@ async function main() {
       organizationId: techOrg.id,
     },
   });
+  dbLogger.success('Created Manager User (MANAGER)');
 
-  console.log('✅ Created users');
+  logger.success('All users created successfully');
 
   // Create subscription plans
   await prisma.plan.create({
@@ -471,22 +505,65 @@ async function main() {
 
   console.log('✅ Created notifications');
 
-  console.log('\n🎉 Database seeding completed successfully!');
-  console.log('\n📊 Summary:');
-  console.log(`   - Users: 2 (demo@urjaflow.com / admin@urjaflow.com)`);
-  console.log(`   - Password: demo123`);
-  console.log(`   - Plans: 3 (Basic, Professional, Enterprise)`);
-  console.log(`   - Devices: 4 (Solar Panel, Battery, Inverter, Meter)`);
-  console.log(`   - Readings: ${readings.length} (last 24 hours)`);
-  console.log(`   - Invoices: 3`);
-  console.log(`   - Support Tickets: 2`);
-  console.log(`   - FAQs: ${faqs.length}`);
-  console.log(`   - Notifications: 3\n`);
+  // Create payment methods
+  await prisma.paymentMethod.createMany({
+    data: [
+      {
+        userId: demoUser.id,
+        type: 'CARD',
+        brand: 'Visa',
+        last4: '4242',
+        expMonth: 12,
+        expYear: 2026,
+        isDefault: true,
+      },
+      {
+        userId: demoUser.id,
+        type: 'CARD',
+        brand: 'Mastercard',
+        last4: '5555',
+        expMonth: 8,
+        expYear: 2027,
+        isDefault: false,
+      },
+    ],
+  });
+
+  console.log('✅ Created payment methods');
+
+  logger.section('🎉 Database Seeding Complete!');
+  
+  logger.successBlock('Seeding Summary', [
+    `Users: 4 (demo@urjaflow.com, admin@urjaflow.com, org.admin@techsolutions.com, manager@techsolutions.com)`,
+    `Password: password123`,
+    `Organizations: 2 (Demo Energy Corp, Tech Solutions Ltd)`,
+    `Plans: 3 (Basic, Professional, Enterprise)`,
+    `Devices: 4+ (Solar Panel, Battery, Inverter, Meter)`,
+    `Readings: ${readings.length} (last 24 hours)`,
+    `Invoices: 3`,
+    `Support Tickets: 2`,
+    `FAQs: ${faqs.length}`,
+    `Notifications: 3`
+  ]);
+
+  logger.subsection('🔐 Role Access Information');
+  
+  const roleInfo = [
+    ['Role', 'Email', 'Access Level'],
+    ['SUPER_ADMIN', 'admin@urjaflow.com', 'Full system access'],
+    ['ORG_ADMIN', 'org.admin@techsolutions.com', 'Organization management'],
+    ['MANAGER', 'manager@techsolutions.com', 'Analytics & Reports'],
+    ['VIEWER', 'demo@urjaflow.com', 'Read-only access']
+  ];
+  
+  logger.table(['Role', 'Email', 'Access Level'], roleInfo);
+  
+  logger.success('Project ready for testing! 🚀');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e);
+    logger.errorBlock('Database seeding failed', e);
     process.exit(1);
   })
   .finally(async () => {
