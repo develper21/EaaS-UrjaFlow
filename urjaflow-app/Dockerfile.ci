@@ -1,0 +1,46 @@
+# CI/CD Optimized Dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+# Copy production dependencies
+COPY --from=deps /app/node_modules
+COPY --from=builder /app/.next
+COPY --from=builder /app/public
+
+# Copy test environment file
+COPY .env.test .env.local
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Set proper permissions
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
