@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Layout } from '@/components/Layout';
 import { PlanCard } from '@/components/PlanCard';
 import { Plan } from '@/types';
+import { RoleGuard } from '@/components/RoleGuard';
 
 // Mock plans data
 const MOCK_PLANS: Plan[] = [
