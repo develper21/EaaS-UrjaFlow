@@ -1,58 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requirePermission } from '@/lib/rbac-middleware';
-import { Permission } from '@/lib/permissions';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { apiLogger } from '@/lib/logger';
+
+// Helper function to get user with organizationId
+function getUserWithOrg(session: any) {
+  return {
+    ...session.user,
+    organizationId: session.user.organizationId || null
+  };
+}
 
 // GET /api/rest/organizations - List organizations
 export async function GET(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.VIEW_ORGANIZATION)(async (req, context) => {
-      const { searchParams } = new URL(req.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '20');
-      const skip = (page - 1) * limit;
+    apiLogger.info('Fetching organizations list');
+    
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      apiLogger.warn('Unauthorized access attempt');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-      const where = context.user.role === 'SUPER_ADMIN'
-        ? {}
-        : { id: context.user.organizationId };
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
 
-      const [organizations, total] = await Promise.all([
-        prisma.organization.findMany({
-          where,
-          skip,
-          take: limit,
+    const user = getUserWithOrg(session);
+    let where = {};
+    
+    // Role-based filtering
+    if (user.role === 'SUPER_ADMIN') {
+      // Super admin can see all organizations
+      where = {};
+    } else if (user.role === 'ORG_ADMIN') {
+      // Org admin can see their own organization
+      where = { id: user.organizationId };
+    } else {
+      // Other roles can't see organizations
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const organizations = await prisma.organization.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        _count: {
+          select: {
+            users: true,
+            devices: true,
+          }
+        },
+        subscriptions: {
           include: {
-            _count: {
-              select: {
-                users: true,
-                devices: true,
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.organization.count({ where })
-      ]);
-
-      return NextResponse.json({
-        success: true,
-        data: organizations,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit)
+            plan: true
+          }
         }
-      });
-    })(request, {});
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    return result;
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    const status = (error as { status?: number }).status || 500;
+    apiLogger.success(`Found ${organizations.length} organizations`);
+    return NextResponse.json(organizations);
+  } catch (error) {
+    apiLogger.error('Failed to fetch organizations', error);
     return NextResponse.json(
-      { success: false, error: message },
-      { status }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
@@ -60,65 +81,51 @@ export async function GET(request: NextRequest) {
 // POST /api/rest/organizations - Create organization
 export async function POST(request: NextRequest) {
   try {
-    const result = await requirePermission(Permission.UPDATE_ORGANIZATION)(async (req) => {
-      const body = await req.json();
+    apiLogger.info('Creating new organization');
+    
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user || !['SUPER_ADMIN', 'ORG_ADMIN'].includes(getUserWithOrg(session).role)) {
+      apiLogger.warn('Unauthorized organization creation attempt');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-      // Validate input
-      if (!body.name || !body.slug) {
-        return NextResponse.json(
-          { success: false, error: 'Name and slug are required' },
-          { status: 400 }
-        );
-      }
-
-      // Check if slug is unique
-      const existing = await prisma.organization.findUnique({
-        where: { slug: body.slug }
-      });
-
-      if (existing) {
-        return NextResponse.json(
-          { success: false, error: 'Organization slug already exists' },
-          { status: 409 }
-        );
-      }
-
-      const organization = await prisma.organization.create({
-        data: {
-          name: body.name,
-          slug: body.slug,
-          domain: body.domain,
-          logo: body.logo,
-          primaryColor: body.primaryColor || '#3b82f6',
-          secondaryColor: body.secondaryColor || '#64748b',
-          plan: body.plan || 'BASIC',
-          maxUsers: body.maxUsers || 5,
-          maxDevices: body.maxDevices || 10,
-          settings: body.settings ? JSON.stringify(body.settings) : null,
-        },
-        include: {
-          _count: {
-            select: {
-              users: true,
-              devices: true,
-            }
+    const body = await request.json();
+    
+    // Create new organization
+    const newOrg = await prisma.organization.create({
+      data: {
+        name: body.name,
+        slug: body.slug,
+        domain: body.domain,
+        logo: body.logo,
+        primaryColor: body.primaryColor || '#3b82f6',
+        secondaryColor: body.secondaryColor || '#64748b',
+        plan: body.plan || 'BASIC',
+        maxUsers: body.maxUsers || 5,
+        maxDevices: body.maxDevices || 10,
+        settings: body.settings ? JSON.stringify(body.settings) : null,
+      },
+      include: {
+        _count: {
+          select: {
+            users: true,
+            devices: true,
           }
         }
-      });
+      }
+    });
 
-      return NextResponse.json({
-        success: true,
-        data: organization
-      }, { status: 201 });
-    })(request, {});
-
-    return result;
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    const status = (error as { status?: number }).status || 500;
+    apiLogger.success(`Organization created: ${newOrg.name}`);
+    return NextResponse.json(newOrg, { status: 201 });
+  } catch (error) {
+    apiLogger.error('Failed to create organization', error);
     return NextResponse.json(
-      { success: false, error: message },
-      { status }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
