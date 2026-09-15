@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
           select: {
             users: true,
             devices: true,
+            subscriptions: true,
           }
         },
         subscriptions: {
