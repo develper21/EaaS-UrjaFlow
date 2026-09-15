@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     if (status === 'loading') return; // Still loading
-    if (!session || !session.user || (session.user as User).role !== 'ADMIN') {
+    if (!session || !session.user || !['ADMIN', 'SUPER_ADMIN'].includes((session.user as User).role)) {
       router.push('/auth/signin');
     }
   }, [session, status, router]);
@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!session || !session.user || (session.user as User).role !== 'ADMIN') {
+  if (!session || !session.user || !['ADMIN', 'SUPER_ADMIN'].includes((session.user as User).role)) {
     return null;
   }
 
