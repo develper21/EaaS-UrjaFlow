@@ -37,6 +37,7 @@ const MOCK_FAQS: FAQ[] = [
 ];
 
 export default function SupportPage() {
+  const [faqs, setFaqs] = useState<FAQ[]>(MOCK_FAQS);
   const [formData, setFormData] = useState({
     subject: '',
     category: 'Technical',
@@ -44,16 +45,44 @@ export default function SupportPage() {
     description: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  React.useEffect(() => {
+    fetch('/api/support')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setFaqs(json.data);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch FAQs:', err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // TODO: Implement API call
-    console.log('Submit ticket:', formData);
-    setTimeout(() => {
+    setMessage('');
+
+    try {
+      const res = await fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMessage('Ticket submitted successfully! Our support team will get back to you.');
+        setFormData({ subject: '', category: 'Technical', priority: 'MEDIUM', description: '' });
+      } else {
+        setMessage(data.error || 'Failed to submit ticket');
+      }
+    } catch {
+      setMessage('An error occurred while submitting ticket');
+    } finally {
       setSubmitting(false);
-      setFormData({ subject: '', category: 'Technical', priority: 'MEDIUM', description: '' });
-    }, 2000);
+      setTimeout(() => setMessage(''), 4000);
+    }
   };
 
   return (
@@ -69,6 +98,11 @@ export default function SupportPage() {
           {/* Contact Form */}
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-6 text-xl font-semibold text-gray-900">Submit a Ticket</h2>
+            {message && (
+              <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-3 text-sm font-medium text-green-800">
+                {message}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Subject</label>
@@ -190,7 +224,7 @@ export default function SupportPage() {
             Frequently Asked Questions
           </h2>
           <div className="space-y-6">
-            {MOCK_FAQS.map((faq) => (
+            {faqs.map((faq) => (
               <div key={faq.id} className="border-b border-gray-100 pb-6 last:border-0">
                 <h3 className="font-semibold text-gray-900">{faq.question}</h3>
                 <p className="mt-2 text-gray-600">{faq.answer}</p>
