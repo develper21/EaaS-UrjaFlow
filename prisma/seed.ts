@@ -247,6 +247,7 @@ async function main() {
   // Create devices for organizations
   const solarPanel = await prisma.device.create({
     data: {
+      userId: demoUser.id,
       organizationId: demoOrg.id,
       name: 'Rooftop Solar Array',
       type: 'SOLAR_PANEL',
@@ -262,6 +263,7 @@ async function main() {
   const battery = await prisma.device.create({
     data: {
       userId: demoUser.id,
+      organizationId: demoOrg.id,
       name: 'Home Battery Storage',
       type: 'BATTERY',
       model: 'Tesla Powerwall 2',
@@ -276,6 +278,7 @@ async function main() {
   await prisma.device.create({
     data: {
       userId: demoUser.id,
+      organizationId: demoOrg.id,
       name: 'Solar Inverter',
       type: 'INVERTER',
       model: 'SolarEdge SE7600H',
@@ -290,10 +293,12 @@ async function main() {
   const meter = await prisma.device.create({
     data: {
       userId: demoUser.id,
+      organizationId: demoOrg.id,
       name: 'Smart Energy Meter',
       type: 'METER',
       model: 'Sense Energy Monitor',
       serialNumber: 'MTR-2024-001',
+      capacity: 10.0,
       status: 'ACTIVE',
       location: JSON.stringify({ lat: 37.7749, lng: -122.4194, address: 'San Francisco, CA' }),
       installedAt: new Date('2024-01-15'),
@@ -302,34 +307,52 @@ async function main() {
 
   console.log('✅ Created devices');
 
-  // Create sample device readings (last 24 hours)
+  // Create sample device readings (last 7 days = 168 hours)
   const now = new Date();
   const readings = [];
 
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 168; i++) {
     const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
     const hour = timestamp.getHours();
 
-    // Solar generation varies by time of day (peak at noon)
+    // Solar generation varies by time of day (peak around 12:00-14:00)
     const solarMultiplier = Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));
-    const generation = 3.5 * solarMultiplier + Math.random() * 0.5;
+    // Vary daily peak slightly for each day
+    const dayFactor = 0.8 + 0.4 * Math.sin(i / 24);
+    let generation = 4.2 * solarMultiplier * dayFactor + Math.random() * 0.4;
+    
+    // Inject a few realistic anomalies (e.g. sudden drop at noon due to temporary shading/fault)
+    if (i === 14) {
+      generation = 0.1; // Sudden drop anomaly
+    }
 
-    // Consumption varies (higher in morning and evening)
-    const consumptionBase = hour < 6 || hour > 22 ? 0.5 : hour > 8 && hour < 18 ? 2.0 : 3.5;
-    const consumption = consumptionBase + Math.random() * 0.5;
+    // Consumption varies (morning 7-9 and evening 18-22 peaks)
+    const consumptionBase =
+      hour < 6 || hour > 23
+        ? 0.6
+        : hour >= 7 && hour <= 9
+        ? 3.2
+        : hour >= 18 && hour <= 21
+        ? 3.8
+        : 1.8;
+    const consumption = consumptionBase + Math.random() * 0.4;
 
     // Battery level
-    const batteryLevel = 60 + Math.random() * 30;
+    const batteryLevel = Math.min(100, Math.max(15, 65 + 30 * Math.sin(((hour - 10) / 12) * Math.PI) + (Math.random() * 6 - 3)));
+
+    const voltage = 238 + Math.random() * 6;
+    const temperature = 24 + generation * 4 + Math.random() * 3;
+    const efficiency = generation > 0 ? 88 + Math.random() * 8 : 0;
 
     readings.push({
       deviceId: solarPanel.id,
       timestamp,
-      generationKW: generation,
+      generationKW: parseFloat(generation.toFixed(2)),
       consumptionKW: 0,
-      voltage: 240 + Math.random() * 10,
-      current: generation * 4.17,
-      temperature: 25 + Math.random() * 10,
-      efficiency: 85 + Math.random() * 10,
+      voltage: parseFloat(voltage.toFixed(1)),
+      current: parseFloat((generation * 4.17).toFixed(2)),
+      temperature: parseFloat(temperature.toFixed(1)),
+      efficiency: parseFloat(efficiency.toFixed(1)),
     });
 
     readings.push({
@@ -337,24 +360,24 @@ async function main() {
       timestamp,
       generationKW: 0,
       consumptionKW: 0,
-      batteryPercent: batteryLevel,
-      voltage: 400 + Math.random() * 20,
-      temperature: 20 + Math.random() * 5,
+      batteryPercent: parseFloat(batteryLevel.toFixed(1)),
+      voltage: 400 + Math.random() * 15,
+      temperature: 22 + Math.random() * 4,
     });
 
     readings.push({
       deviceId: meter.id,
       timestamp,
-      generationKW: generation,
-      consumptionKW: consumption,
-      voltage: 240 + Math.random() * 5,
-      current: consumption * 4.17,
+      generationKW: parseFloat(generation.toFixed(2)),
+      consumptionKW: parseFloat(consumption.toFixed(2)),
+      voltage: parseFloat(voltage.toFixed(1)),
+      current: parseFloat((consumption * 4.17).toFixed(2)),
     });
   }
 
   await prisma.deviceReading.createMany({ data: readings });
 
-  console.log('✅ Created device readings');
+  console.log('✅ Created 7 days of device readings');
 
   // Create invoices
   await prisma.invoice.create({
