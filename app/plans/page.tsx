@@ -78,9 +78,21 @@ const MOCK_PLANS: Plan[] = [
 export default function PlansPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [plans, setPlans] = useState<Plan[]>(MOCK_PLANS);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const currentPlanId = '2'; // Mock current plan
+
+  React.useEffect(() => {
+    fetch('/api/plans')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setPlans(json.data);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch plans:', err));
+  }, []);
 
   const handleSubscribe = async (planId: string) => {
     // Check if user is authenticated
@@ -118,13 +130,14 @@ export default function PlansPage() {
     } catch (err) {
       console.error('Subscription error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start checkout');
+    } finally {
       setLoading(null);
     }
   };
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-12">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">Choose Your Plan</h1>
@@ -148,7 +161,7 @@ export default function PlansPage() {
 
         {/* Plans Grid */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {MOCK_PLANS.map((plan) => (
+          {plans.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
