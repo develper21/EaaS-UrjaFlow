@@ -1,7 +1,5 @@
 import { NextAuthOptions, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
-import GitHubProvider from 'next-auth/providers/github';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
 
@@ -50,7 +48,7 @@ export const authOptions: NextAuthOptions = {
 
         // Verify password
         if (!user.password) {
-          throw new Error('Please use OAuth to sign in');
+          throw new Error('Invalid credentials');
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -71,36 +69,9 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID || '',
-      clientSecret: process.env.GITHUB_SECRET || '',
-    }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === 'google' || account?.provider === 'github') {
-        // Check if user exists in Prisma
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (!existingUser) {
-          // Create new user in Prisma
-          await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name,
-              image: user.image,
-              role: 'CUSTOMER',
-              emailVerified: new Date(),
-            },
-          });
-        }
-      }
+    async signIn({ user }) {
       return true;
     },
     async jwt({ token, user }) {
