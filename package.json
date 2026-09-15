@@ -5,29 +5,16 @@
   "scripts": {
     "dev": "NODE_ENV=development next dev",
     "dev:logs": "NODE_ENV=development DEBUG=* next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write .",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed": "node --env-file=.env node_modules/.bin/tsx prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "prisma:generate": "prisma generate",
-    "mock:iot": "tsx scripts/mock_iot.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:real-data": "./scripts/test-real-data.sh",
-    "test:roles": "playwright test --grep \"SUPER_ADMIN|ORG_ADMIN|MANAGER|VIEWER\"",
-    "test:dashboard": "playwright test --grep \"Dashboard\"",
-    "test:analytics": "playwright test --grep \"Analytics\"",
-    "ci:local": "./scripts/local-ci.sh",
-    "ci:docker": "docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit",
-    "prepare": "echo 'Skipping husky install'",
     "stripe:webhook": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
-    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
-    "docker:down": "docker-compose -f docker-compose.dev.yml down"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@apollo/server": "^5.2.0",
@@ -44,9 +31,9 @@
     "jspdf": "^4.0.0",
     "lucide-react": "^0.303.0",
     "ml-regression": "^6.3.0",
-    "next": "^14.2.35",
+    "next": "^16.3.5",
     "next-auth": "^4.24.5",
-    "nodemailer": "^7.0.7",
+    "nodemailer": "^10.0.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "recharts": "^2.10.3",
@@ -59,7 +46,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^15.0.0",
@@ -76,24 +62,13 @@
     "eslint": "^9",
     "eslint-config-next": "^16.1.3",
     "eslint-config-prettier": "^9.1.0",
-    "husky": "^8.0.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "lint-staged": "^15.2.0",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.10",
     "prisma": "^5.8.1",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,css}": [
-      "prettier --write"
-    ]
   }
 }
