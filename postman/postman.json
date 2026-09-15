@@ -1,0 +1,1689 @@
+{
+  "info": {
+    "_postman_id": "urjaflow-api-collection-v1",
+    "name": "UrjaFlow API Collection",
+    "description": "Complete API testing collection for UrjaFlow Energy-as-a-Service (EaaS) platform. Includes all REST endpoints, NextAuth authentication flows, and GraphQL queries/mutations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Base URL of the application (Local: http://localhost:3000, Prod: https://urjaflow.vercel.app)"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT session token for authenticated requests"
+    },
+    {
+      "key": "organizationId",
+      "value": "demo-org-id",
+      "type": "string",
+      "description": "Sample organization ID for multi-tenant routes"
+    },
+    {
+      "key": "deviceId",
+      "value": "demo-device-id",
+      "type": "string",
+      "description": "Sample device ID for telemetry and ML routes"
+    },
+    {
+      "key": "notificationId",
+      "value": "demo-notification-id",
+      "type": "string",
+      "description": "Sample notification ID"
+    },
+    {
+      "key": "paymentMethodId",
+      "value": "pm_card_visa",
+      "type": "string",
+      "description": "Stripe payment method ID"
+    },
+    {
+      "key": "planId",
+      "value": "basic-plan-id",
+      "type": "string",
+      "description": "Subscription plan ID"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Check server status, database connectivity, and uptime."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "User Signup (Register)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"VIEWER\",\n  \"organizationName\": \"New Energy Corp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Register a new user account with role and optional organization."
+          }
+        },
+        {
+          "name": "Get CSRF Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/csrf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "csrf"
+              ]
+            },
+            "description": "Retrieve NextAuth CSRF token required for sign-in."
+          }
+        },
+        {
+          "name": "Get Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/providers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "providers"
+              ]
+            },
+            "description": "List configured NextAuth authentication providers."
+          }
+        },
+        {
+          "name": "Credentials Signin (NextAuth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "admin@urjaflow.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "password123",
+                  "type": "text"
+                },
+                {
+                  "key": "csrfToken",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                },
+                {
+                  "key": "callbackUrl",
+                  "value": "{{baseUrl}}/admin",
+                  "type": "text"
+                },
+                {
+                  "key": "json",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/callback/credentials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "callback",
+                "credentials"
+              ]
+            },
+            "description": "Authenticate using email and password to receive session cookie."
+          }
+        },
+        {
+          "name": "Get Current Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "session"
+              ]
+            },
+            "description": "Check the current authenticated NextAuth user session."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Account & Profile",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "account",
+                "profile"
+              ]
+            },
+            "description": "Fetch detailed profile of the authenticated user."
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"phone\": \"+1-555-0199\",\n  \"company\": \"UrjaFlow Technologies\",\n  \"address\": \"123 Solar Way, San Francisco, CA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "account",
+                "profile"
+              ]
+            },
+            "description": "Update user profile details such as name, phone, company, and address."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Dashboard & Devices",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Fetch aggregated dashboard statistics including energy metrics, device counts, and recent readings."
+          }
+        },
+        {
+          "name": "Get All Devices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "devices"
+              ]
+            },
+            "description": "Fetch all IoT energy devices (Solar, Wind, Battery, Inverters, Smart Meters)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Subscription Plans & Checkout",
+      "item": [
+        {
+          "name": "Get Available Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plans"
+              ]
+            },
+            "description": "Fetch available subscription tiers (Basic, Professional, Enterprise)."
+          }
+        },
+        {
+          "name": "Create Subscription Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"{{planId}}\",\n  \"successUrl\": \"{{baseUrl}}/payment/success?session_id={CHECKOUT_SESSION_ID}\",\n  \"cancelUrl\": \"{{baseUrl}}/payment/cancel\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscribe"
+              ]
+            },
+            "description": "Create a Stripe checkout session for subscribing to a plan."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Billing & Payments",
+      "item": [
+        {
+          "name": "Get Billing Overview & Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing"
+              ]
+            },
+            "description": "Fetch active subscription, payment status, and invoices."
+          }
+        },
+        {
+          "name": "Get Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/payment-method",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "payment-method"
+              ]
+            },
+            "description": "List attached cards and payment methods."
+          }
+        },
+        {
+          "name": "Create Setup Intent (Add Payment Method)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/payment-method",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "payment-method"
+              ]
+            },
+            "description": "Create a Stripe Setup Intent to securely collect and save a new card."
+          }
+        },
+        {
+          "name": "Delete Payment Method",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/payment-method?id={{paymentMethodId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "payment-method"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{paymentMethodId}}",
+                  "description": "Payment method ID to detach"
+                }
+              ]
+            },
+            "description": "Detach and remove a saved payment method."
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "cancel"
+              ]
+            },
+            "description": "Cancel active subscription at current billing period end."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Organizations (Multi-Tenancy)",
+      "item": [
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rest/organizations?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rest",
+                "organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "List organizations with pagination."
+          }
+        },
+        {
+          "name": "Create Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apex Renewable Energy\",\n  \"slug\": \"apex-renewable-energy\",\n  \"domain\": \"apex.urjaflow.com\",\n  \"plan\": \"PROFESSIONAL\",\n  \"maxUsers\": 15,\n  \"maxDevices\": 25,\n  \"primaryColor\": \"#059669\",\n  \"secondaryColor\": \"#10b981\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rest/organizations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rest",
+                "organizations"
+              ]
+            },
+            "description": "Create a new organization tenant."
+          }
+        },
+        {
+          "name": "Get Organization Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rest/organizations/{{organizationId}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rest",
+                "organizations",
+                "{{organizationId}}",
+                "users"
+              ]
+            },
+            "description": "Fetch all users assigned to a specific organization."
+          }
+        },
+        {
+          "name": "Get Organization Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "settings"
+              ]
+            },
+            "description": "Get organization branding and configuration settings for current tenant."
+          }
+        },
+        {
+          "name": "Update Organization Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Organization Name\",\n  \"primaryColor\": \"#2563eb\",\n  \"secondaryColor\": \"#475569\",\n  \"logo\": \"https://example.com/logo.png\",\n  \"settings\": {\n    \"timezone\": \"America/New_York\",\n    \"energyUnit\": \"kWh\",\n    \"currency\": \"USD\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "settings"
+              ]
+            },
+            "description": "Update branding and configurations for the organization."
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Machine Learning & Predictive Analytics",
+      "item": [
+        {
+          "name": "Get Anomalies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/anomalies?hours=24&deviceId={{deviceId}}&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ml",
+                "anomalies"
+              ],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "24",
+                  "description": "Time window in hours"
+                },
+                {
+                  "key": "deviceId",
+                  "value": "{{deviceId}}",
+                  "description": "Optional filter by device"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}",
+                  "description": "Filter by organization"
+                }
+              ]
+            },
+            "description": "Retrieve detected telemetry anomalies based on statistical thresholds."
+          }
+        },
+        {
+          "name": "Check Reading for Anomalies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"reading\": {\n    \"generationKW\": 24.5,\n    \"consumptionKW\": 18.2,\n    \"batteryPercent\": 88,\n    \"voltage\": 235,\n    \"current\": 12.4,\n    \"temperature\": 42,\n    \"efficiency\": 94.5\n  },\n  \"threshold\": 2.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/anomalies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ml",
+                "anomalies"
+              ]
+            },
+            "description": "Run anomaly detection on an incoming device reading."
+          }
+        },
+        {
+          "name": "Get ML Predictions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/predictions?deviceId={{deviceId}}&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ml",
+                "predictions"
+              ],
+              "query": [
+                {
+                  "key": "deviceId",
+                  "value": "{{deviceId}}"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Get forecasted generation and consumption metrics."
+          }
+        },
+        {
+          "name": "Generate New Predictions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"hoursAhead\": 24\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/predictions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ml",
+                "predictions"
+              ]
+            },
+            "description": "Train regression model on historical readings and predict future values."
+          }
+        },
+        {
+          "name": "Get Comparative Benchmarks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/benchmarks?period=30&organizationId={{organizationId}}&deviceId={{deviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "benchmarks"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "30",
+                  "description": "Period in days"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                },
+                {
+                  "key": "deviceId",
+                  "value": "{{deviceId}}"
+                }
+              ]
+            },
+            "description": "Fetch efficiency rankings and comparison against industry averages."
+          }
+        },
+        {
+          "name": "Calculate Custom Benchmark",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"{{organizationId}}\",\n  \"targetEfficiency\": 95,\n  \"targetGenerationKW\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/benchmarks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "benchmarks"
+              ]
+            },
+            "description": "Compute custom performance delta and benchmarks."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Notifications & Alerts",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "description": "List all notifications for the current user/organization."
+          }
+        },
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"High Temperature Warning\",\n  \"message\": \"Inverter #2 has exceeded normal operating temperatures (45°C).\",\n  \"type\": \"WARNING\",\n  \"link\": \"/analytics\",\n  \"organizationId\": \"{{organizationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "description": "Create an alert/notification."
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "Mark an unread notification as read."
+          }
+        },
+        {
+          "name": "Get Notification Threshold Rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "rules"
+              ]
+            },
+            "description": "Get active alert triggering rules and threshold settings."
+          }
+        },
+        {
+          "name": "Send Notification (Broadcast)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SYSTEM_ALERT\",\n  \"message\": \"Scheduled maintenance in 2 hours.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "send"
+              ]
+            },
+            "description": "Send alert broadcast across connected clients."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Reports & Exports",
+      "item": [
+        {
+          "name": "Get Report Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "templates"
+              ]
+            },
+            "description": "List pre-configured report templates (Executive Summary, Device Performance, Carbon Offset)."
+          }
+        },
+        {
+          "name": "List Generated Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/generated",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "generated"
+              ]
+            },
+            "description": "List previously generated reports ready for download."
+          }
+        },
+        {
+          "name": "Generate New Report (PDF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"{{organizationId}}\",\n  \"format\": \"PDF\",\n  \"period\": 30,\n  \"includeCharts\": true,\n  \"includeRecommendations\": true,\n  \"sections\": [\n    \"summary\",\n    \"devices\",\n    \"readings\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "generate"
+              ]
+            },
+            "description": "Generate a custom energy analytics report in PDF format."
+          }
+        },
+        {
+          "name": "Export Data (JSON Format)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/data?format=json&type=readings&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "data"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "json"
+                },
+                {
+                  "key": "type",
+                  "value": "readings"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Export telemetry dataset in JSON format."
+          }
+        },
+        {
+          "name": "Export Data (CSV Format)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/csv"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/data?format=csv&type=readings&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "data"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "csv"
+                },
+                {
+                  "key": "type",
+                  "value": "readings"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Export telemetry dataset formatted as CSV."
+          }
+        },
+        {
+          "name": "Export Data (Excel XLSX Format)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/data?format=xlsx&type=readings&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "export",
+                "data"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "xlsx"
+                },
+                {
+                  "key": "type",
+                  "value": "readings"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Export telemetry dataset into an Excel spreadsheet."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Support & Helpdesk",
+      "item": [
+        {
+          "name": "Get FAQs & Support Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support"
+              ]
+            },
+            "description": "Fetch frequently asked questions and user support tickets."
+          }
+        },
+        {
+          "name": "Create Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Inverter telemetry offline\",\n  \"description\": \"Device INV-001 stopped transmitting power readings at 08:00 AM.\",\n  \"priority\": \"HIGH\",\n  \"category\": \"HARDWARE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support"
+              ]
+            },
+            "description": "Submit a new customer support ticket."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Admin (Super Admin Only)",
+      "item": [
+        {
+          "name": "Get System Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": "Get platform-wide statistics (Total Users, Active Orgs, System Devices, Monthly MRR)."
+          }
+        },
+        {
+          "name": "Get Platform Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Retrieve complete directory of users across all tenants."
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Webhooks",
+      "item": [
+        {
+          "name": "Stripe Webhook Listener",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "stripe-signature",
+                "value": "t=12345,v1=test_signature"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_test_webhook\",\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_test_123\",\n      \"customer\": \"cus_test_123\",\n      \"subscription\": \"sub_test_123\",\n      \"metadata\": {\n        \"userId\": \"user_test_id\",\n        \"planId\": \"plan_test_id\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/stripe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "webhooks",
+                "stripe"
+              ]
+            },
+            "description": "Stripe event listener endpoint (requires valid stripe-signature header)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. GraphQL API",
+      "item": [
+        {
+          "name": "GraphQL Query - List Devices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetDevices {\\n  devices {\\n    id\\n    name\\n    type\\n    status\\n    capacity\\n    organization {\\n      id\\n      name\\n    }\\n  }\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "graphql"
+              ]
+            },
+            "description": "Execute GraphQL query to fetch all devices and their organizations."
+          }
+        },
+        {
+          "name": "GraphQL Query - Energy Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetAnalytics {\\n  analytics {\\n    energyStats {\\n      totalGeneration\\n      totalConsumption\\n      netEnergy\\n      efficiency\\n      carbonOffset\\n      period\\n    }\\n    deviceStats {\\n      deviceId\\n      deviceName\\n      generation\\n      efficiency\\n    }\\n  }\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "graphql"
+              ]
+            },
+            "description": "Execute GraphQL query to fetch calculated energy analytics and carbon offset."
+          }
+        },
+        {
+          "name": "GraphQL Mutation - Add Device Reading",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation AddReading($input: DeviceReadingInput!) {\\n  addDeviceReading(input: $input) {\\n    id\\n    deviceId\\n    generationKW\\n    consumptionKW\\n    efficiency\\n    timestamp\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"deviceId\": \"{{deviceId}}\",\n      \"generationKW\": 35.8,\n      \"consumptionKW\": 22.1,\n      \"batteryPercent\": 92,\n      \"voltage\": 240,\n      \"current\": 15,\n      \"temperature\": 38.5,\n      \"efficiency\": 96\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "graphql"
+              ]
+            },
+            "description": "Execute GraphQL mutation to ingest telemetry reading for a device."
+          }
+        },
+        {
+          "name": "GraphQL Mutation - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Login($input: LoginInput!) {\\n  login(input: $input) {\\n    token\\n    user {\\n      id\\n      email\\n      name\\n      role\\n    }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"admin@urjaflow.com\",\n      \"password\": \"password123\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "graphql"
+              ]
+            },
+            "description": "GraphQL login mutation that returns a JWT token."
+          }
+        }
+      ]
+    }
+  ]
+}
