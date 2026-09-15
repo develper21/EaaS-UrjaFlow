@@ -27,7 +27,7 @@ function PaymentSuccessContent() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-gradient-to-br from-green-50 to-blue-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 px-4">
       <div className="w-full max-w-md text-center">
         {/* Success Icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">

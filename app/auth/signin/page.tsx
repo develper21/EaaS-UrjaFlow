@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -43,20 +42,6 @@ function SignInForm() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'github') => {
-    setLoading(true);
-    setError('');
-
-    try {
-      await signIn(provider, {
-        callbackUrl,
-      });
-    } catch {
-      setError(`Failed to sign in with ${provider}`);
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen">
       {/* Left side - Form */}
@@ -92,17 +77,6 @@ function SignInForm() {
                 </div>
               </div>
             )}
-
-            <div>
-              <div className="relative mt-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                </div>
-              </div>
-            </div>
 
             <div className="mt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -189,27 +163,33 @@ function SignInForm() {
       </div>
 
       {/* Right side - Image/Branding */}
-      <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-linear-to-br from-green-400 to-blue-500">
-          <div className="flex h-full flex-col items-center justify-center p-12 text-white">
-            <Icons.zap size={80} className="mb-8" />
-            <h2 className="mb-4 text-4xl font-bold">Energy as a Service</h2>
-            <p className="max-w-md text-center text-lg">
+      <div className="relative hidden w-0 flex-1 overflow-hidden lg:block">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-green-600 to-teal-800">
+          {/* Ambient background glows */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
+
+          <div className="relative flex h-full flex-col items-center justify-center p-12 text-white">
+            <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md shadow-lg border border-white/20">
+              <Icons.zap size={56} className="text-white drop-shadow-md" />
+            </div>
+            <h2 className="mb-4 text-4xl font-bold tracking-tight text-center">Energy as a Service</h2>
+            <p className="max-w-md text-center text-lg text-emerald-50/90 leading-relaxed">
               Monitor your renewable energy systems in real-time. Track generation, consumption,
               and savings all in one place.
             </p>
-            <div className="mt-12 grid grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-3xl font-bold">24/7</div>
-                <div className="text-sm">Monitoring</div>
+            <div className="mt-12 grid grid-cols-3 gap-6 text-center w-full max-w-md">
+              <div className="rounded-xl bg-white/10 backdrop-blur-xs p-4 border border-white/15 shadow-sm">
+                <div className="text-3xl font-bold tracking-tight">24/7</div>
+                <div className="mt-1 text-xs font-medium uppercase tracking-wider text-emerald-100">Monitoring</div>
               </div>
-              <div>
-                <div className="text-3xl font-bold">Real-time</div>
-                <div className="text-sm">Analytics</div>
+              <div className="rounded-xl bg-white/10 backdrop-blur-xs p-4 border border-white/15 shadow-sm">
+                <div className="text-3xl font-bold tracking-tight">Real-time</div>
+                <div className="mt-1 text-xs font-medium uppercase tracking-wider text-emerald-100">Analytics</div>
               </div>
-              <div>
-                <div className="text-3xl font-bold">100%</div>
-                <div className="text-sm">Renewable</div>
+              <div className="rounded-xl bg-white/10 backdrop-blur-xs p-4 border border-white/15 shadow-sm">
+                <div className="text-3xl font-bold tracking-tight">100%</div>
+                <div className="mt-1 text-xs font-medium uppercase tracking-wider text-emerald-100">Renewable</div>
               </div>
             </div>
           </div>

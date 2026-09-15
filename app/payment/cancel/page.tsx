@@ -6,7 +6,7 @@ import { Icons } from '@/components/Icons';
 
 export default function PaymentCancelPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-gradient-to-br from-gray-50 to-gray-100 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
       <div className="w-full max-w-md text-center">
         {/* Cancel Icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100">
