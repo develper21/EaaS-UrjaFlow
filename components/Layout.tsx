@@ -7,6 +7,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { Icon, IconName } from './Icons';
 import { cn } from '@/lib/utils';
 
+import { NotificationDropdown } from './NotificationDropdown';
+
 interface NavItem {
   name: string;
   href: string;
@@ -152,26 +154,60 @@ export function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:px-8">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
-          >
-            <Icon name={sidebarOpen ? 'close' : 'menu'} size={24} />
-          </button>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-gray-200/80 bg-white/95 backdrop-blur-md px-4 shadow-xs lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="rounded-xl p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors lg:hidden"
+              aria-label="Toggle Navigation"
+            >
+              <Icon name={sidebarOpen ? 'close' : 'menu'} size={22} />
+            </button>
 
-          <div className="flex-1" />
+            {/* Organization / Site Badge */}
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-gray-200/80 bg-gray-50/90 px-3.5 py-1.5 text-xs font-medium text-gray-700 shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              <span className="font-semibold text-gray-900">Demo Energy Corp</span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-500">Site Array A1</span>
+            </div>
+          </div>
 
-          {/* Notifications */}
-          <button className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100">
-            <Icon name="bell" size={20} />
-            <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
-          </button>
+          {/* Right Header Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Interactive Notifications Popover */}
+            <NotificationDropdown />
 
-          {/* Settings */}
-          <Link href="/account" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100">
-            <Icon name="settings" size={20} />
-          </Link>
+            {/* Settings Quick Link */}
+            <Link
+              href="/account"
+              className="rounded-xl p-2.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              title="Account Settings"
+            >
+              <Icon name="settings" size={20} />
+            </Link>
+
+            {/* User Quick Profile Chip */}
+            <Link
+              href="/account"
+              className="hidden sm:flex items-center gap-2.5 pl-2 ml-1 border-l border-gray-200 group"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-green-400 text-white font-bold text-xs shadow-xs transition-transform group-hover:scale-105">
+                {(session?.user?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors leading-tight">
+                  {session?.user?.name || 'Demo User'}
+                </p>
+                <p className="text-[10px] text-gray-400 leading-none">
+                  {session?.user?.role || 'VIEWER'}
+                </p>
+              </div>
+            </Link>
+          </div>
         </header>
 
         {/* Page content */}
