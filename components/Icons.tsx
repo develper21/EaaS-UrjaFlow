@@ -56,6 +56,7 @@ import {
   Copy,
   Share2,
   Loader2,
+  ArrowRight,
 } from 'lucide-react';
 
 export const Icons = {
@@ -100,6 +101,7 @@ export const Icons = {
   home: Home,
   chevronRight: ChevronRight,
   chevronDown: ChevronDown,
+  arrowRight: ArrowRight,
   
   // Notifications
   bell: Bell,
