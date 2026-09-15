@@ -43,22 +43,21 @@ export async function GET() {
       );
     }
 
-    // Use raw query to avoid type issues
-    const user = await prisma.$queryRaw`
-      SELECT 
-        id, 
-        email, 
-        name, 
-        phone, 
-        company, 
-        address, 
-        created_at as "createdAt", 
-        role 
-      FROM "User" 
-      WHERE id = ${session.user.id}
-    `;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        company: true,
+        address: true,
+        role: true,
+        createdAt: true,
+      },
+    });
 
-    if (!user || (user as UserProfile[]).length === 0) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
@@ -67,7 +66,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: (user as UserProfile[])[0],
+      data: user,
     });
   } catch (error) {
     console.error('Profile GET error:', error);
@@ -92,29 +91,28 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const validatedData = profileSchema.parse(body);
 
-    // Use raw query to avoid type issues
-    const updatedUser = await prisma.$queryRaw`
-      UPDATE "User" 
-      SET 
-        name = COALESCE(${validatedData.name}, name),
-        phone = COALESCE(${validatedData.phone}, phone),
-        company = COALESCE(${validatedData.company}, company),
-        address = COALESCE(${validatedData.address}, address),
-        updated_at = NOW()
-      WHERE id = ${session.user.id}
-      RETURNING 
-        id, 
-        email, 
-        name, 
-        phone, 
-        company, 
-        address, 
-        updated_at as "updatedAt"
-    `;
+    const updatedUser = await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        ...(validatedData.name !== undefined ? { name: validatedData.name } : {}),
+        ...(validatedData.phone !== undefined ? { phone: validatedData.phone } : {}),
+        ...(validatedData.company !== undefined ? { company: validatedData.company } : {}),
+        ...(validatedData.address !== undefined ? { address: validatedData.address } : {}),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        company: true,
+        address: true,
+        updatedAt: true,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      data: (updatedUser as UpdatedProfile[])[0],
+      data: updatedUser,
       message: 'Profile updated successfully',
     });
   } catch (error) {
