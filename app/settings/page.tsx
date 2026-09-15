@@ -100,7 +100,8 @@ export default function SettingsPage() {
 
       if (userRes.ok) {
         const userData = await userRes.json();
-        setUserSettings(prev => ({ ...prev, ...userData }));
+        const profile = userData?.data || userData;
+        setUserSettings(prev => ({ ...prev, ...profile }));
       }
 
       if (orgRes.ok) {
