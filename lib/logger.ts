@@ -203,11 +203,8 @@ class Logger {
     const filledLength = Math.round((barLength * current) / total);
     const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
     
-    process.stdout.write(`\r${colors.blue}${bar}${colors.reset} ${percentage}% ${label}`);
-    
-    if (current === total) {
-      console.log(''); // New line when complete
-    }
+    // Use console.log instead of process.stdout.write for Edge Runtime compatibility
+    console.log(`${colors.blue}${bar}${colors.reset} ${percentage}% ${label}`);
   }
 }
 
