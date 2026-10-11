@@ -11,27 +11,6 @@ const profileSchema = z.object({
   address: z.string().max(500).optional(),
 });
 
-interface UserProfile {
-  id: string;
-  email: string;
-  name: string | null;
-  phone: string | null;
-  company: string | null;
-  address: string | null;
-  createdAt: Date;
-  role: string;
-}
-
-interface UpdatedProfile {
-  id: string;
-  email: string;
-  name: string | null;
-  phone: string | null;
-  company: string | null;
-  address: string | null;
-  updatedAt: Date;
-}
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
