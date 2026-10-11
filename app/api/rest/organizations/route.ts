@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession, Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiLogger } from '@/lib/logger';
 
 // Helper function to get user with organizationId
-function getUserWithOrg(session: any) {
+function getUserWithOrg(session: Session) {
   return {
     ...session.user,
     organizationId: session.user.organizationId || null
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     if (user.role === 'SUPER_ADMIN') {
       // Super admin can see all organizations
       where = {};
-    } else if (user.role === 'ORG_ADMIN') {
+    } else if (user.role === 'ORG_ADMIN' && user.organizationId) {
       // Org admin can see their own organization
       where = { id: user.organizationId };
     } else {
