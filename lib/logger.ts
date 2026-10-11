@@ -87,50 +87,50 @@ class Logger {
     return parts.join(' ');
   }
 
-  debug(message: string, ...args: any[]) {
+  debug(message: string, ...args: unknown[]) {
     if (LogLevel.DEBUG >= this.minLevel) {
       console.log(this.formatMessage(LogLevel.DEBUG, message, colors.gray, symbols.debug), ...args);
     }
   }
 
-  info(message: string, ...args: any[]) {
+  info(message: string, ...args: unknown[]) {
     if (LogLevel.INFO >= this.minLevel) {
       console.log(this.formatMessage(LogLevel.INFO, message, colors.blue, symbols.info), ...args);
     }
   }
 
-  success(message: string, ...args: any[]) {
+  success(message: string, ...args: unknown[]) {
     if (LogLevel.SUCCESS >= this.minLevel) {
       console.log(this.formatMessage(LogLevel.SUCCESS, message, colors.green, symbols.success), ...args);
     }
   }
 
-  warn(message: string, ...args: any[]) {
+  warn(message: string, ...args: unknown[]) {
     if (LogLevel.WARN >= this.minLevel) {
       console.warn(this.formatMessage(LogLevel.WARN, message, colors.yellow, symbols.warn), ...args);
     }
   }
 
-  error(message: string, ...args: any[]) {
+  error(message: string, ...args: unknown[]) {
     if (LogLevel.ERROR >= this.minLevel) {
       console.error(this.formatMessage(LogLevel.ERROR, message, colors.red, symbols.error), ...args);
     }
   }
 
   // Specialized methods
-  database(message: string, ...args: any[]) {
+  database(message: string, ...args: unknown[]) {
     console.log(this.formatMessage(LogLevel.INFO, message, colors.magenta, '🗄'), ...args);
   }
 
-  api(message: string, ...args: any[]) {
+  api(message: string, ...args: unknown[]) {
     console.log(this.formatMessage(LogLevel.INFO, message, colors.cyan, '🌐'), ...args);
   }
 
-  auth(message: string, ...args: any[]) {
+  auth(message: string, ...args: unknown[]) {
     console.log(this.formatMessage(LogLevel.INFO, message, colors.yellow, '🔐'), ...args);
   }
 
-  server(message: string, ...args: any[]) {
+  server(message: string, ...args: unknown[]) {
     console.log(this.formatMessage(LogLevel.SUCCESS, message, colors.green, '🚀'), ...args);
   }
 
