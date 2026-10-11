@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "jest --runInBand",
     "format": "prettier --write .",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node --env-file=.env node_modules/.bin/tsx prisma/seed.ts",
