@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const orgId = (session.user as { organizationId?: string }).organizationId;
-    let organization = orgId
+    const organization = orgId
       ? await prisma.organization.findUnique({ where: { id: orgId } })
       : await prisma.organization.findFirst();
 
