@@ -478,55 +478,26 @@ Organizations (1) ←→ (N) Subscriptions
 
 ```
 tests/
-├── e2e/                    # End-to-end tests
-│   ├── auth-helper.ts     # Authentication helpers
-│   ├── dashboard.spec.ts  # Dashboard tests
-│   ├── analytics.spec.ts  # Analytics tests
-│   └── auth.spec.ts       # Authentication tests
-├── unit/                   # Unit tests
-└── integration/            # Integration tests
+├── frontend/               # React component tests
+├── server/                 # Next.js API route tests
+└── unit/                   # Shared utility tests
 ```
 
 ### Running Tests
 
 #### Local Testing
 ```bash
-# Run all tests
-npm run test:real-data
-
-# Run role-based tests
-npm run test:roles
-
-# Run specific feature tests
-npm run test:dashboard
-npm run test:analytics
-
-# Run E2E tests
-npm run test:e2e
-
-# Run unit tests
+# Run all Jest tests
 npm test
+
+# Run lint, tests, and production build (same checks as CI)
+npm run lint
+npm test -- --ci
+npm run build
 ```
 
-#### CI/CD Testing
-```bash
-# Run complete CI pipeline locally
-npm run ci:local
-
-# Run Docker-based CI
-npm run ci:docker
-```
-
-### Test Coverage
-
-- **Authentication**: All 4 user roles tested
-- **Authorization**: Route protection and permissions
-- **Real Data**: Tests with actual database data
-- **UI Components**: Component-level testing
-- **API Endpoints**: All API routes tested
-- **Database Operations**: CRUD operations verified
-- **Performance**: Load and stress testing
-- **Security**: Vulnerability scanning
+GitHub Actions runs these checks on pushes and pull requests. The frontend and API routes
+share one root `package.json`, so CI installs dependencies once with `npm ci`.
 
 ---
 
