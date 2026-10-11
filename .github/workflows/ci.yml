@@ -1,0 +1,39 @@
+name: CI - Pipeline
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Lint, test, and build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/urjaflow?schema=public
+      NEXTAUTH_SECRET: ci-only-secret-at-least-32-characters
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --ci
+
+      - name: Build
+        run: npm run build
