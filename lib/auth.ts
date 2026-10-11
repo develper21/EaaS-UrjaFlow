@@ -1,28 +1,7 @@
-import { NextAuthOptions, DefaultSession } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
-
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      role: string;
-    } & DefaultSession['user']
-  }
-
-  interface User {
-    id: string;
-    role: string;
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    role: string;
-  }
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -71,7 +50,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
+    async signIn() {
       return true;
     },
     async jwt({ token, user }) {
@@ -88,7 +67,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role;
         // Add organizationId if it exists
         if (token.organizationId) {
-          (session.user as any).organizationId = token.organizationId;
+          session.user.organizationId = token.organizationId;
         }
       }
       return session;
