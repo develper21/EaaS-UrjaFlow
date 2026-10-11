@@ -6,8 +6,7 @@ import { Icons, Icon, IconName } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 import { StatCard } from '@/components/StatCard';
 import { Layout } from '@/components/Layout';
-import { RoleGuard, ConditionalRender } from '@/components/RoleGuard';
-import { useRole } from '@/hooks/useRole';
+import { ConditionalRender } from '@/components/RoleGuard';
 
 interface Organization {
   id: string;
@@ -42,7 +41,6 @@ interface User {
 
 export default function OrganizationsPage() {
   const { data: session } = useSession();
-  const { isAdmin, canAccess } = useRole();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [users, setUsers] = useState<User[]>([]);
