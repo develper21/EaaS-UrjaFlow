@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import stripe from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 // Get payment methods
@@ -33,7 +33,7 @@ export async function GET() {
       });
     }
 
-    const paymentMethods = await stripe.paymentMethods.list({
+    const paymentMethods = await getStripe().paymentMethods.list({
       customer: user.subscriptions[0].stripeCustomerId,
       type: 'card',
     });
@@ -85,7 +85,7 @@ export async function POST() {
 
     // Create customer if doesn't exist
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: user.email,
         name: user.name || undefined,
         metadata: {
@@ -96,7 +96,7 @@ export async function POST() {
     }
 
     // Create setup intent
-    const setupIntent = await stripe.setupIntents.create({
+    const setupIntent = await getStripe().setupIntents.create({
       customer: customerId,
       payment_method_types: ['card'],
     });
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await stripe.paymentMethods.detach(paymentMethodId);
+    await getStripe().paymentMethods.detach(paymentMethodId);
 
     return NextResponse.json({
       success: true,
