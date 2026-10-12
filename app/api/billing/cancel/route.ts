@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import stripe from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 export async function POST() {
@@ -42,7 +42,7 @@ export async function POST() {
     }
 
     // Cancel subscription at period end
-    const canceledSubscription = await stripe.subscriptions.update(
+    const canceledSubscription = await getStripe().subscriptions.update(
       subscription.stripeSubscriptionId,
       {
         cancel_at_period_end: true,
